@@ -1,11 +1,5 @@
+# macOS
+.DS_Store
+
 # Node
 node_modules/
-
-# 运行时产物（真实项目里由各项目自己决定是否纳管，本仓库只发布 skill 本体）
-changes/
-openspec/changes/
-.spec-bridge.yaml
-
-# OS / IDE
-.DS_Store
-*.log

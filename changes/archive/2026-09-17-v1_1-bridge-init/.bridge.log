@@ -1,0 +1,5 @@
+- 2026-09-17T09:53:35.112Z state initialized
+- 2026-09-17T09:54:24.214Z next: contract approved - inline executing batch 1-3, gates 4, archive 5
+- 2026-09-17T10:00:40.159Z capability snapshot corrected: openspec not installed and not used — actual stack is C (builtin minimal loop)
+- 2026-09-17T10:05:18.855Z spec defect R3 corrected + re-contracted (content-level hash gate worked as designed)
+- 2026-09-17T10:07:20.880Z next: archived — v1.1 done, receipt verified, why distilled

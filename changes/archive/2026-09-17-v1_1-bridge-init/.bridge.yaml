@@ -1,0 +1,23 @@
+# .bridge.yaml — spec-bridge change state
+# Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
+
+# === Lifecycle ===
+stage: archived
+layout: standalone
+branch: v1.1
+
+# === Capabilities (probed once per change) ===
+capabilities: builtin
+
+# === Contract gate ===
+contract_approved: re-approved by JcLoveCode 2026-09-17: R3 spec defect fixed (standalone bootstrap semantics), no behavior change, contract content unchanged
+artifacts_hash: sha256:2a6eea8a5f6149648a108367b41148668fc3f232a2711c270100d626215bb703
+contract_hash: sha256:9fddd3d4baa56d131bbc44a06819615593186eee96ebb902f39fbad2aa86ad02
+
+# === Publication receipt (written by vendored sync) ===
+published: true
+spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1Njo0N2Q3NjY0YTYzMjI1ZDZhYmZiZjEzZmFlNDhhYWIyN2I3YjEzZDA4ZDIyZDY0NmZlODc5YTJmMTk4OGM5YzM5IiwiYmFzZWxpbmVfYmVmb3JlX2hhc2giOiJzaGEyNTY6MmVkOWJmODEwODczZmYwOTU3NDFiZGYyMjJkOWY0YmVhNDgyMWVjMDE0OGQyNzcyYTk1YzMyYmVkZGJlODE4MCIsImJhc2VsaW5lX2FmdGVyX2hhc2giOiJzaGEyNTY6NWZiMDg5ZjliNTI2M2Y3NjUxOGNmMTZlMWI4YTFhMmJlMTZkZjE0OGI0NDQwZDZkY2UwMDg2MTNmZGNkMjdhYSIsImNhcGFiaWxpdGllcyI6WyJjbGkiXX0
+
+# === Resume ===
+next: archived — v1.1 done, receipt verified, why distilled
+last_event: next: archived — v1.1 done, receipt verified, why distilled

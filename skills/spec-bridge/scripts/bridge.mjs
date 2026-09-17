@@ -17,6 +17,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path, { join, resolve } from 'node:path';
 import { run as runSync } from './vendor/cmd-sync.mjs';
+import { run as runInit } from './cmd-init.mjs';
 import { readState, writeState, appendEvent } from './vendor/bridge-state.mjs';
 import { validatePublicationReceipt } from './vendor/spec-publication.mjs';
 
@@ -25,6 +26,8 @@ const ARTIFACTS = ['proposal.md', 'design.md', 'tasks.md'];
 function usage(code = 2) {
   const text = [
     'Usage: bridge <command> [args]',
+    '  init <name> [--capability <c>] [--branch <b>] [--layout <l>] [--capabilities <c>]',
+    '                                     scaffold a new change dir (templates + state + log)',
     '  sync <change-dir>                  publish deltas to root baseline + receipt',
     '  verify <change-dir>                validate publication receipt (closing guard)',
     '  state init <change-dir> [--layout L] [--branch B] [--capabilities C]',
@@ -113,6 +116,11 @@ function listChanges(projectRoot) {
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
   if (!command) usage(2);
+
+  if (command === 'init') {
+    const result = await runInit(rest);
+    process.exit(result.exitCode ?? 0);
+  }
 
   if (command === 'sync') {
     const changeDir = rest[0];
