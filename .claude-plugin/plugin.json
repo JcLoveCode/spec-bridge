@@ -1,0 +1,24 @@
+{
+  "name": "spec-bridge",
+  "version": "0.1.0",
+  "description": "Single-entry workflow router bridging OpenSpec (planning), Superpowers (execution), and Matt-skills (fallback stack), with a vendored deterministic spec-publication engine.",
+  "author": {
+    "name": "JcLoveCode",
+    "url": "https://github.com/JcLoveCode"
+  },
+  "homepage": "https://github.com/JcLoveCode/spec-bridge",
+  "repository": "https://github.com/JcLoveCode/spec-bridge",
+  "license": "MIT",
+  "keywords": [
+    "openspec",
+    "superpowers",
+    "spec-driven-development",
+    "workflow",
+    "execution-contract",
+    "spec-execution",
+    "knowledge-distillation"
+  ],
+  "skills": [
+    "./skills/spec-bridge"
+  ]
+}

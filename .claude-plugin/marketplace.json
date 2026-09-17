@@ -1,0 +1,23 @@
+{
+  "name": "JcLoveCode",
+  "owner": {
+    "name": "JcLoveCode",
+    "url": "https://github.com/JcLoveCode"
+  },
+  "description": "Spec Bridge — bridging OpenSpec, Superpowers, and Matt-skills through one single-entry router.",
+  "plugins": [
+    {
+      "name": "spec-bridge",
+      "source": "./",
+      "description": "Single-entry workflow router with a vendored deterministic spec-publication engine and unidirectional why-distillation.",
+      "category": "engineering",
+      "keywords": [
+        "openspec",
+        "superpowers",
+        "spec-driven-development",
+        "execution-contract",
+        "workflow"
+      ]
+    }
+  ]
+}
