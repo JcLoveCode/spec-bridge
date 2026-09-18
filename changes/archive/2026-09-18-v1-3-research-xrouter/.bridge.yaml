@@ -1,0 +1,29 @@
+# .bridge.yaml — spec-bridge change state
+# Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
+
+# === Lifecycle ===
+stage: archived
+layout: standalone
+branch: v1.3
+
+# === Workflow (v1.2) ===
+workflow_kind: builtin
+parent: null
+parent_artifacts_hash: null
+
+# === Capabilities (probed once per change) ===
+capabilities: null
+tags: null
+
+# === Contract gate ===
+contract_approved: true
+artifacts_hash: sha256:485ccbee1045fea48452c58958ef1ece7cb3685b5f62f307f888d941de7cf217
+contract_hash: sha256:3691f4acb51bfb6539f866e66434dc40ec7b3741e77c7b6896227327d27f1d8a
+
+# === Publication receipt (written by vendored sync) ===
+published: true
+spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1Njo5ZTUyZjk5ZWU1YmIxMjQ4ZjhiMGYyZDkxM2VmOGVlNTY5OGFmYjdjNjcxZjE3OWE1Y2NjOGJhZTRkNDFiZWQwIiwiYmFzZWxpbmVfYmVmb3JlX2hhc2giOiJzaGEyNTY6ZTU0OTUxMDRiMWZmNmIwZTE3ODBlZjU3OTQ5OTI4ZDNkYTEwMzMwN2FkMjJjN2E5MDJhMGYyYTljODQ0YjQyZiIsImJhc2VsaW5lX2FmdGVyX2hhc2giOiJzaGEyNTY6Y2E0ZDA1YzBlNDU3NmQ2ODdiMDY1YTQ1NGU0MDEyNzM4Nzg1M2E3OTUxYmJmN2VlOTdkNDQwOWFjMTVhYTdjNCIsImNhcGFiaWxpdGllcyI6WyJ2MS0zLXJlc2VhcmNoLXhyb3V0ZXIiXX0
+
+# === Resume ===
+next: 已归档：cited 笔记 .scratch/v1-3-cross-stack-research.md 落盘，v1.3 实现期 follow-up 引用此 artifacts_hash
+last_event: next: 已归档：cited 笔记 .scratch/v1-3-cross-stack-research.md 落盘，v1.3 实现期 follow-up 引用此 artifacts_hash
