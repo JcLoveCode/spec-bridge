@@ -1,0 +1,29 @@
+# .bridge.yaml — spec-bridge change state
+# Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
+
+# === Lifecycle ===
+stage: executing
+layout: standalone
+branch: null
+
+# === Workflow (v1.2) ===
+workflow_kind: builtin
+parent: 2026-09-18-v1-4-list-archive-visibility
+parent_artifacts_hash: sha256:1a43f39163d13b8978eae385b6e50fa994f280f71d9bf74e81a406cdb087fa48
+
+# === Capabilities (probed once per change) ===
+capabilities: null
+tags: null
+
+# === Contract gate ===
+contract_approved: v1.5 planning approved: 4 products + spec.md reviewed; R1+R2+R3 + D1+D2+D3 consistent; ready for executing
+artifacts_hash: sha256:a3d190454e5cf4bbead5cd6af3e86b624e9802e3555dd6c84dee0331420799b8
+contract_hash: sha256:dc8b00eb9db03ae9e946729a9e3d72b63c192f6eb0727eb80e6a498767e6728b
+
+# === Publication receipt (written by vendored sync) ===
+published: false
+spec_publication_receipt: null
+
+# === Resume ===
+next: Batch 1 done: vendor resolvePublicationContext while 循环 (T1.1) + tests 3/3 GREEN (T1.2); 新发现 v1.4 verify FAIL 是 receipt 已废副作用而非 vendor bug 未修, 详 progress.md
+last_event: next: Batch 1 done: vendor resolvePublicationContext while 循环 (T1.1) + tests 3/3 GREEN (T1.2); 新发现 v1.4 verify FAIL 是 receipt 已废副作用而非 vendor bug 未修, 详 progress.md

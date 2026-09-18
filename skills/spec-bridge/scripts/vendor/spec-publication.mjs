@@ -270,8 +270,16 @@ export function applyDeltaToBaseline(baselineContent, deltaContent, capability) 
 
 export function resolvePublicationContext(changeDir) {
   const absoluteChangeDir = resolve(changeDir);
-  const changesDir = dirname(absoluteChangeDir);
-  const projectRoot = basename(changesDir) === 'changes' ? dirname(changesDir) : dirname(absoluteChangeDir);
+  // 沿 dirname 往上跳到 basename === 'changes' 的祖先目录再算 projectRoot，
+  // 支持任意深度的 changes/<...>/<id>/ 路径（含 changes/archive/<date>-<id>/ 与套娃）。
+  // 单 if-else 写法只认 active 路径；archive 路径下 basename(changesDir) 是 'archive' 而非 'changes'，
+  // 走 else 把 archive 目录当成仓库根，导致 baselineSpecsDir 找不到 specs/ → verify FAIL。
+  let cursor = dirname(absoluteChangeDir);
+  while (basename(cursor) !== 'changes') {
+    if (cursor === dirname(cursor)) break; // 兜底：已到根目录仍未找到 changes 目录
+    cursor = dirname(cursor);
+  }
+  const projectRoot = basename(cursor) === 'changes' ? dirname(cursor) : dirname(absoluteChangeDir);
   return {
     changeDir: absoluteChangeDir,
     projectRoot,

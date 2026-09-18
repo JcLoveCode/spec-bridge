@@ -1,0 +1,5 @@
+- 2026-09-18T10:13:20.557Z init: scaffolded v1-5-vendor-distill-guard (layout=standalone, workflow=builtin, capabilities=unset, parent=2026-09-18-v1-4-list-archive-visibility)
+- 2026-09-18T10:21:38.034Z stage: planning → contracted
+- 2026-09-18T10:21:38.132Z next: 已批准契约，待执行
+- 2026-09-18T10:21:51.349Z stage: contracted → executing
+- 2026-09-18T10:24:03.129Z next: Batch 1 done: vendor resolvePublicationContext while 循环 (T1.1) + tests 3/3 GREEN (T1.2); 新发现 v1.4 verify FAIL 是 receipt 已废副作用而非 vendor bug 未修, 详 progress.md
