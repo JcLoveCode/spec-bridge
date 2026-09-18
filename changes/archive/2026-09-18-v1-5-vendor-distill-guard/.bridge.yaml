@@ -2,7 +2,7 @@
 # Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
 
 # === Lifecycle ===
-stage: executing
+stage: archived
 layout: standalone
 branch: null
 
@@ -21,9 +21,9 @@ artifacts_hash: sha256:a3d190454e5cf4bbead5cd6af3e86b624e9802e3555dd6c84dee03314
 contract_hash: sha256:dc8b00eb9db03ae9e946729a9e3d72b63c192f6eb0727eb80e6a498767e6728b
 
 # === Publication receipt (written by vendored sync) ===
-published: false
-spec_publication_receipt: null
+published: true
+spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1NjpjNjVlYWFmNDRhZWNjOTkzMTkwYjIwZjJhYzYzMmMwYjhlY2YyMzJmOWIyYzk2MTU2YjYxNDMxYzRmZDBiYmNiIiwiYmFzZWxpbmVfYmVmb3JlX2hhc2giOiJzaGEyNTY6ZTRhN2Q2ODdiMTFlOTYyZDIzNmI3YzQ3YzVmY2M0MWUzNDMxMmNlNTExOWFlNjc4MjMyM2JlODg3Njg5MzUyZCIsImJhc2VsaW5lX2FmdGVyX2hhc2giOiJzaGEyNTY6NjVjN2IzZWUyYWMzN2IxOGZlOWExODM4MjY0Y2FjMWVmMGM0OWMwNGZiM2I1ZmFmYTI5NzgyMmIyMmJiZGNjNCIsImNhcGFiaWxpdGllcyI6WyJhcmNoaXZlLXB1Ymxpc2gtZ3VhcmQiXX0
 
 # === Resume ===
 next: Batch 3 done: cmd-archive-ready 守门员子命令 (T3.1) + bridge.mjs dispatch 加 archive-ready (T3.2) + 6 case 全 PASS (T3.3); 实战 v1-5 正确拒绝 (未 sync); 全套 95/96 PASS; 详 progress.md
-last_event: next: Batch 3 done: cmd-archive-ready 守门员子命令 (T3.1) + bridge.mjs dispatch 加 archive-ready (T3.2) + 6 case 全 PASS (T3.3); 实战 v1-5 正确拒绝 (未 sync); 全套 95/96 PASS; 详 progress.md
+last_event: Batch N complete: synced (vendor fix verified PASS) + verified + distill (why.md with D1+D2+D3) + archive-ready guard PASS + git mv + state archived

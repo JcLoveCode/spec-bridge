@@ -209,3 +209,58 @@ tests 96 / pass 95 / fail 1
 - TN.6 commit Batch N + （可选）push
 
 **预期风险**：TN.2 verify 应 PASS（v1.5 receipt 用新算法算，baseline 真实存在）；不重现 v1.4 偏差（v1.4 是历史 receipt 已废）。
+
+---
+
+## Batch N — v1.5 归档流程 ✅
+
+### 任务完成
+
+| 步骤 | 命令 | 结果 |
+|---|---|---|
+| TN.1 | `bridge sync changes/v1-5-vendor-distill-guard` | ✅ exit 0 — Published 1 canonical spec to specs/archive-publish-guard/spec.md + wrote receipt |
+| TN.2 | `bridge verify changes/v1-5-vendor-distill-guard` | ✅ exit 0 PASS — `publication receipt matches current deltas and published baseline` |
+| TN.3 | `bridge archive-ready changes/v1-5-vendor-distill-guard` | ✅ exit 0 PASS — `1 capability with why.md present` |
+| TN.4 | `git mv changes/v1-5-vendor-distill-guard changes/archive/2026-09-18-v1-5-vendor-distill-guard/` | ✅ |
+| TN.5 | `bridge state set <archive-path> stage archived` | ✅ exit 0 — `stage updated` |
+| TN.6 | `bridge event <archive-path> "Batch N complete: ..."` | ✅ `event recorded` |
+
+### 关键里程碑
+
+**v1.5 是 spec-bridge 第一个跑通"sync → verify → distill → archive-ready → git mv → state archived"完整 6 步流程的 change**：
+
+- D1 vendor while 循环修复 → v1.5 sync 用新算法算出真实 baseline hash → verify PASS
+- D2 cmd-distill 子命令 → why.md 真生成含 D1+D2+D3 三条决策 + Conclusion + Source-of-truth
+- D3 cmd-archive-ready 守门员 → 三连绿（sync + verify + archive-ready）后才允许 git mv
+
+**v1.4 偏差不复现**：v1.5 receipt 是新算法下生成的真 hash（baseline_after_hash = `sha256:65c7b3ee...`，真实 specs/archive-publish-guard/spec.md 的 hash），未来 v1.5 verify 仍会 PASS（除非 specs/ 被人改）。
+
+### v1.5 commits (v1.2 分支)
+
+```
+1bedfa2 v1.5 vendor-distill-guard: 加 cmd-archive-ready 守门员子命令
+dc18747 v1.5 vendor-distill-guard: 加 cmd-distill 子命令 + 实战生成 why.md
+4a90dd1 v1.5 vendor-distill-guard: 修 archive resolvePublicationContext + 建 v1.5
+```
+
++ Batch N archive commit（含 git mv + state archived + sync 写的 specs/）
+
+### 最终验收清单
+
+- [x] R1（vendor fix）— tests/vendor-resolve-publication-context.test.mjs 3/3 PASS
+- [x] R2（distill CLI）— tests/cmd-distill.test.mjs 6/6 PASS + 实战 v1.5 生成 why.md
+- [x] R3（archive guard）— tests/cmd-archive-ready.test.mjs 6/6 PASS + 三连绿实战
+- [x] 全套回归 95/96 PASS（1 fail = v1.4 latent bug，已记录未修）
+- [x] v1.5 已 git mv + state archived + event 追加
+- [x] spec 根基线 specs/archive-publish-guard/spec.md 已生成
+
+### 已知遗留（v1.6+ 续作候选）
+
+1. **v1.4 archive verify FAIL**（receipt 历史值 vs 新算法真 hash 不匹配）—— v1.6 续作 rebase v1.4 receipt
+2. **init-integration R1.5.1 fail**（v1.4 latent bug：detectLayout 优先级与 test fixture 不一致）—— v1.6 续作或补 test fixture
+3. **vendor spec-publication.mjs receipt 算法在 receipt 已写入后改算法 → 旧 receipt 永久失效** —— 这是结构性风险，v1.6 续作考虑 receipt 重算路径
+
+### v1.5 完工
+
+3 个核心决策（D1 / D2 / D3）全部实现 + 测试覆盖 + 实战验证 + 归档。
+v1.5 是 spec-bridge 第一个"完整闭环"的 change（从 init 到 archived 全程 CLI 守卫）。
