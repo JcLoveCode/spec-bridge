@@ -1,6 +1,6 @@
 {
   "name": "spec-bridge",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Single-entry workflow router bridging OpenSpec (planning), Superpowers (execution), and Matt-skills (fallback stack), with a vendored deterministic spec-publication engine.",

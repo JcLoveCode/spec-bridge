@@ -69,6 +69,16 @@ change 目录名：`<需求号>-<slug>`（一个需求号分支可承载多个 c
 - `design.md` 必须有 `## Decisions` 段——它是后面 why 蒸馏的唯一权威源。
 - 开工守卫：当前分支是 `main`/`master` → 停下，要求切/建需求号分支。**不建 worktree**。
 
+一键脚手架（v1.1+，推荐入口）：
+
+```bash
+node <bridge> init <name> --capability <cap> --branch <需求号分支> --capabilities <快照> \
+  [--workflow-kind <openspec|matt|builtin>]   # 缺省取 capabilities 首值，再缺省 builtin（ADR-0004）
+  [--parent <archived-change-id>]             # 开续作 follow-up（ADR-0005）：父必已归档，自动快照其 artifacts_hash
+```
+
+或手工初始化状态：
+
 ```bash
 node <bridge> state init <change-dir> --layout <openspec|standalone> --branch <需求号分支> --capabilities <快照>
 ```
@@ -103,6 +113,13 @@ node <bridge> state next <change-dir> "已批准契约，待执行"
 node <bridge> hashes <change-dir> --check   # 漂移 → 停，回到 contracted 重生成契约
 ```
 
+**模式信号（ADR-0007 硬性步骤，不许跳过）**：执行中识别到"同类问题**第二次**出现且已找到根因"
+→ 必须调 `node <bridge> mention <change-dir> --tag <t> [--note <一句话>]`（结构化根因用 `rootcause`）记录信号。
+桥输出全库历史计数，N≥2 会建议开 follow-up。桥不存会话状态——"会话内第二次"的判定由本协议保证，
+压缩后重提触发重复提示是可接受的退化（ADR-0007）。
+
+**导航**（任一拍可跑，纯读）：`node <bridge> next <change-dir>` 输出 stage + next + 按拍建议。
+
 ### archived → 四拍，一个用户可见的归档步骤
 
 ```
@@ -125,6 +142,9 @@ node <bridge> hashes <change-dir> --check   # 漂移 → 停，回到 contracted
 - 禁止在 `main`/`master` 上实现
 - 未过批准门不执行；`hashes --check` 漂移不执行
 - `verify` 失败不许进 archived；归档前必须 `sync` 成功
+- 归档不可变（ADR-0005）：`changes/archive/` 下的产物不编辑，修正一律开续作 `init <name> --parent <id>`；
+  `patching` 旁路（`archived → patching → re-archived`）要求 parent 必填——CLI 已强制（sync exit 4 / state set 白名单）
+- 复验异议走 `bridge rebuttal`（rebuttals/ 落盘，零状态变更），是否升级续作由人决定（提示不决策）
 - 不删除 delta spec（`changes/` 是活动事实源 + 留痕，根基线只是发布产物）
 - 跨 change 冲突（同一 requirement 被多个活跃 change 修改）→ 引擎会拦，交人工定顺序
 - 不匹配的对话输入不碰状态文件（惰性原则）
@@ -136,8 +156,13 @@ node <bridge> hashes <change-dir> --check   # 漂移 → 停，回到 contracted
 |---|---|
 | `layout <root>` | 探测 openspec/standalone 布局 |
 | `list <root>` | 活跃 change 清单 |
-| `state init/get/set/next <dir>` | 状态读写（六字段 + 回执） |
-| `hashes <dir> [--check]` | 产物摘要 / 契约过期检测 |
-| `sync <dir>` | delta → 根基线 + 发布回执 |
-| `verify <dir>` | 回执重算（closing guard） |
+| `init <name> [flags]` | 一键脚手架（`--workflow-kind` / `--parent` 见 §3） |
+| `next <dir>` | 导航：stage + next + 按拍建议动作（纯读） |
+| `state init/get/set/next <dir>` | 状态读写（含 workflow_kind/parent/tags） |
+| `hashes <dir> [--check]` | 产物摘要 / 契约过期检测（归档漂移提示续作） |
+| `sync <dir>` | delta → 根基线 + 发布回执（archive/ 路径 exit 4） |
+| `verify <dir>` | 回执重算（closing guard；失败提示双轨） |
+| `pattern --tag <t> [root]` | 跨变更 tag 聚合，含归档（ADR-0006） |
+| `mention/rootcause <dir> --tag <t>` | 模式信号 + 全库历史计数（ADR-0007） |
+| `rebuttal <dir> <一句话>` | 复验异议落盘（rebuttals/，零状态变更） |
 | `event <dir> <text>` | 追加大事记到 `.bridge.log` |

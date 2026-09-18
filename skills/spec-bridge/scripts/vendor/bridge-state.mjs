@@ -8,14 +8,21 @@ const STATE_FILE = '.bridge.yaml';
 const LOG_FILE = '.bridge.log';
 
 const BUILTIN_DEFAULTS = {
-  // planning | contracted | archived | abandoned（后两个是终态）
+  // planning | contracted | executing | patching | archived | abandoned（后两个是终态；patching = ADR-0005 旁路）
   stage: 'planning',
   // openspec | standalone；null = 尚未探测。仓库级答案，首次使用时写入。
   layout: null,
   // 需求号分支名；sync/归档时校验"没跑错分支"。
   branch: null,
+  // v1.2 (ADR-0004)：流程线声明 openspec | matt | builtin；缺省从 capabilities 首值推导。
+  workflow_kind: null,
+  // v1.2 (ADR-0005)：续作引用——父 change 目录名 + 其产物摘要快照（版本链可重放）。
+  parent: null,
+  parent_artifacts_hash: null,
   // 本次变更探测到的能力快照，逗号分隔，如 "openspec,superpowers,builtin"。
   capabilities: null,
+  // v1.2 (ADR-0006)：模式标签，自由文本逗号分隔，跨变更聚类（bridge pattern）。
+  tags: null,
   // 契约批准摘要；null = 未批准。执行前的硬门。
   contract_approved: null,
   // 4 产物内容摘要（proposal/specs/design/tasks），契约过期检测用。
@@ -71,8 +78,14 @@ export function writeState(changeDir, state) {
   lines.push(`layout: ${oneLine(merged.layout) ?? 'null'}`);
   lines.push(`branch: ${oneLine(merged.branch) ?? 'null'}`);
   lines.push('');
+  lines.push('# === Workflow (v1.2) ===');
+  lines.push(`workflow_kind: ${oneLine(merged.workflow_kind) ?? 'null'}`);
+  lines.push(`parent: ${oneLine(merged.parent) ?? 'null'}`);
+  lines.push(`parent_artifacts_hash: ${merged.parent_artifacts_hash ?? 'null'}`);
+  lines.push('');
   lines.push('# === Capabilities (probed once per change) ===');
   lines.push(`capabilities: ${oneLine(merged.capabilities) ?? 'null'}`);
+  lines.push(`tags: ${oneLine(merged.tags) ?? 'null'}`);
   lines.push('');
   lines.push('# === Contract gate ===');
   lines.push(`contract_approved: ${oneLine(merged.contract_approved) ?? 'null'}`);
@@ -109,6 +122,46 @@ export function appendEvent(changeDir, line) {
   const timestamp = new Date().toISOString();
   fs.appendFileSync(logFilePath(changeDir), `- ${timestamp} ${entry}\n`, 'utf-8');
   return updateField(changeDir, 'last_event', entry);
+}
+
+/**
+ * v1.2 (ADR-0005/D3)：定位父 change——活跃目录优先，其次归档目录（<date>-<id> 前缀）。
+ * 返回 { dir, state } 或 null。纯读操作。
+ */
+export function resolveParent(changesDir, parentId) {
+  if (!parentId) return null;
+  const active = path.join(changesDir, parentId);
+  if (fs.existsSync(path.join(active, STATE_FILE))) {
+    return { dir: active, state: readState(active) };
+  }
+  const archiveDir = path.join(changesDir, 'archive');
+  if (fs.existsSync(archiveDir)) {
+    for (const entry of fs.readdirSync(archiveDir)) {
+      if (entry !== parentId && !entry.endsWith(`-${parentId}`)) continue;
+      const dir = path.join(archiveDir, entry);
+      if (fs.existsSync(path.join(dir, STATE_FILE))) return { dir, state: readState(dir) };
+    }
+  }
+  return null;
+}
+
+/**
+ * v1.2 (ADR-0005/D4)：stage 转换校验。patching 旁路要求 parent 必填且父已归档。
+ * 返回 { ok: true } 或 { ok: false, reason }。纯读操作，不改状态。
+ */
+export function checkStageTransition(changeDir, nextStage) {
+  if (nextStage !== 'patching') return { ok: true };
+  const state = readState(changeDir);
+  if (!state.parent) {
+    return { ok: false, reason: `patching requires a parent — open a follow-up with --parent ${path.basename(changeDir)}-fix-N first` };
+  }
+  const changesDir = path.dirname(path.resolve(changeDir));
+  const parent = resolveParent(changesDir, state.parent);
+  if (!parent) return { ok: false, reason: `parent '${state.parent}' not found in ${changesDir}` };
+  if (parent.state.stage !== 'archived') {
+    return { ok: false, reason: `parent '${state.parent}' is stage=${parent.state.stage}, not archived` };
+  }
+  return { ok: true };
 }
 
 // Minimal YAML parser — top-level flat fields only, zero dependencies.

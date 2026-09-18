@@ -4,10 +4,25 @@
 import { spawnSync as spawnShim } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve, sep } from 'node:path';
-import { appendEvent, readState, writeState } from './vendor/bridge-state.mjs';
+import { appendEvent, readState, writeState, resolveParent } from './vendor/bridge-state.mjs';
 
 const KEBAB_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const MAX_WALENCH = 10;
+// v1.2 (ADR-0004/D1)：workflow_kind 合法值域。
+const WORKFLOW_KINDS = new Set(['openspec', 'matt', 'builtin']);
+
+// v1.2 (ADR-0004/D1)：三级推导——显式 --workflow-kind > --capabilities 首值（须在值域内）> builtin。
+// 返回 null 表示显式给了非法值（调用方报错 exit 2）。
+function deriveWorkflowKind(flags) {
+  if (flags['workflow-kind']) {
+    return WORKFLOW_KINDS.has(flags['workflow-kind']) ? flags['workflow-kind'] : null;
+  }
+  if (flags.capabilities) {
+    const first = flags.capabilities.split(',')[0].trim();
+    if (WORKFLOW_KINDS.has(first)) return first;
+  }
+  return 'builtin';
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 模板常量（D2）。改模板改代码，hash 不盖模板（D2 + D5）。
@@ -219,7 +234,7 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   const { positional, flags } = parseArgs(args);
 
   if (positional.length === 0) {
-    stderr.write('Usage: bridge init <name> [--capability <cap>] [--branch <branch>] [--layout <standalone|openspec>] [--capabilities <comma,separated,list>]\n');
+    stderr.write('Usage: bridge init <name> [--capability <cap>] [--branch <branch>] [--layout <standalone|openspec>] [--capabilities <comma,list>] [--workflow-kind <openspec|matt|builtin>] [--parent <archived-change-id>]\n');
     return { exitCode: 2 };
   }
 
@@ -228,6 +243,15 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
     stderr.write(`invalid change name: '${name}' — must be kebab-case (lowercase letters/digits separated by '-')\n`);
     return { exitCode: 2 };
   }
+
+  const workflowKind = deriveWorkflowKind(flags);
+  if (workflowKind === null) {
+    stderr.write(`invalid --workflow-kind '${flags['workflow-kind']}' — must be one of: openspec, matt, builtin\n`);
+    return { exitCode: 2 };
+  }
+
+  // v1.2 (ADR-0005/D3)：续作引用快照——占位，实际解析在 changesDir 确定后执行。
+  let parentSnapshot = null;
 
   const detected = detectProjectRoot(cwd);
   if (detected.source === 'cwd-fallback') {
@@ -248,6 +272,20 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
     return { exitCode: 3 };
   }
 
+  // v1.2 (ADR-0005/D3)：续作引用——父必存在且已归档，快照其 artifacts_hash（版本链可重放）。
+  if (flags.parent) {
+    const parent = resolveParent(changesDir, flags.parent);
+    if (!parent) {
+      stderr.write(`parent '${flags.parent}' not found under ${changesDir} (active or archive)\n`);
+      return { exitCode: 2 };
+    }
+    if (parent.state.stage !== 'archived') {
+      stderr.write(`parent '${flags.parent}' is stage=${parent.state.stage}, not archived — follow-ups may only reference archived changes (ADR-0005)\n`);
+      return { exitCode: 2 };
+    }
+    parentSnapshot = { parent: flags.parent, hash: parent.state.artifacts_hash };
+  }
+
   mkdirSync(capDir, { recursive: true });
   const values = { NAME: name, CAP: flags.capability || defaultCapability(name) };
 
@@ -262,11 +300,13 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
     ...readState(changeDir),
     stage: 'planning',
     layout,
+    workflow_kind: workflowKind,
+    ...(parentSnapshot ? { parent: parentSnapshot.parent, parent_artifacts_hash: parentSnapshot.hash } : {}),
     ...(flags.branch ? { branch: flags.branch } : {}),
     ...(flags.capabilities ? { capabilities: flags.capabilities } : {}),
     next: 'edit proposal/design/tasks/spec — when stable, write execution-contract.md and advance to contracted',
   });
-  appendEvent(changeDir, `init: scaffolded ${basename(changeDir)} (layout=${layout}, capabilities=${next.capabilities ?? 'unset'})`);
+  appendEvent(changeDir, `init: scaffolded ${basename(changeDir)} (layout=${layout}, workflow=${workflowKind}, capabilities=${next.capabilities ?? 'unset'}${parentSnapshot ? `, parent=${parentSnapshot.parent}` : ''})`);
 
   stdout.write(`${changeDir}\n`);
   stdout.write(`next: edit proposal/design/tasks/specs — when stable, write execution-contract.md and advance to contracted\n`);

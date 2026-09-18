@@ -18,7 +18,11 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path, { join, resolve } from 'node:path';
 import { run as runSync } from './vendor/cmd-sync.mjs';
 import { run as runInit } from './cmd-init.mjs';
-import { readState, writeState, appendEvent } from './vendor/bridge-state.mjs';
+import { run as runNext } from './cmd-next.mjs';
+import { run as runPattern } from './cmd-pattern.mjs';
+import { run as runMention, runRootcause } from './cmd-mention.mjs';
+import { run as runRebuttal } from './cmd-rebuttal.mjs';
+import { readState, writeState, appendEvent, checkStageTransition } from './vendor/bridge-state.mjs';
 import { validatePublicationReceipt } from './vendor/spec-publication.mjs';
 
 const ARTIFACTS = ['proposal.md', 'design.md', 'tasks.md'];
@@ -28,6 +32,10 @@ function usage(code = 2) {
     'Usage: bridge <command> [args]',
     '  init <name> [--capability <c>] [--branch <b>] [--layout <l>] [--capabilities <c>]',
     '                                     scaffold a new change dir (templates + state + log)',
+    '  next <change-dir>                  navigation: stage + next hint + advised action',
+    '  pattern --tag <t> [root]           cross-change tag aggregation (incl. archive/)',
+    '  mention <dir> --tag <t> [--note s] record pattern signal + history count (ADR-0007)',
+    '  rootcause <dir> --tag <t> [--note s] structured root-cause signal (ADR-0007)',
     '  sync <change-dir>                  publish deltas to root baseline + receipt',
     '  verify <change-dir>                validate publication receipt (closing guard)',
     '  state init <change-dir> [--layout L] [--branch B] [--capabilities C]',
@@ -122,9 +130,35 @@ async function main() {
     process.exit(result.exitCode ?? 0);
   }
 
+  if (command === 'next') {
+    const result = await runNext(rest);
+    process.exit(result.exitCode ?? 0);
+  }
+
+  if (command === 'pattern') {
+    const result = await runPattern(rest);
+    process.exit(result.exitCode ?? 0);
+  }
+
+  if (command === 'mention' || command === 'rootcause') {
+    const runner = command === 'mention' ? runMention : runRootcause;
+    const result = await runner(rest);
+    process.exit(result.exitCode ?? 0);
+  }
+
+  if (command === 'rebuttal') {
+    const result = await runRebuttal(rest);
+    process.exit(result.exitCode ?? 0);
+  }
+
   if (command === 'sync') {
     const changeDir = rest[0];
     if (!changeDir) usage(2);
+    // v1.2 (ADR-0005/D5)：归档写保护——sync 拒绝 archive/ 路径，exit 4。
+    if (resolve(changeDir).split(path.sep).includes('archive')) {
+      console.error(`WRITE-PROTECTED: ${changeDir} is under changes/archive/ — archived changes are immutable (ADR-0005). Open a follow-up: init <name> --parent <change-id>`);
+      process.exit(4);
+    }
     const result = await runSync([changeDir]);
     process.exit(result.exitCode ?? 0);
   }
@@ -143,6 +177,8 @@ async function main() {
       process.exit(0);
     }
     console.error(`FAIL: ${report.reason}`);
+    // v1.2 (R3-Q2 双轨)：偏差提示——记录异议或开续作，二选一由人决定。
+    console.error('— consider: bridge rebuttal <dir> "<objection>" (记录异议) or init <name> --parent <change-id> (开续作修复)');
     process.exit(1);
   }
 
@@ -189,7 +225,21 @@ async function main() {
         console.error(`unknown field: ${field}`);
         process.exit(2);
       }
-      writeState(changeDir, { ...state, [field]: valueParts.join(' ') });
+      const value = valueParts.join(' ');
+      // v1.2 (ADR-0005/D5)：归档写保护——archived change 仅放行 stage 字段（patching 出口）。
+      if (state.stage === 'archived' && field !== 'stage') {
+        console.error(`WRITE-PROTECTED: change is archived — only 'stage' may change (ADR-0005). Other edits belong in a follow-up`);
+        process.exit(2);
+      }
+      if (field === 'stage') {
+        const gate = checkStageTransition(changeDir, value);
+        if (!gate.ok) {
+          console.error(`transition rejected: ${gate.reason}`);
+          process.exit(2);
+        }
+      }
+      writeState(changeDir, { ...state, [field]: value });
+      if (field === 'stage') appendEvent(changeDir, `stage: ${state.stage} → ${value}`);
       console.log(`${field} updated`);
       process.exit(0);
     }
@@ -230,6 +280,11 @@ async function main() {
       problems.push('execution-contract.md was edited after approval');
     }
     if (problems.length > 0) {
+      // v1.2 (ADR-0005/D5)：归档漂移提示续作，不鼓励改原版。
+      if (state.stage === 'archived') {
+        console.error(`STALE: ${problems.join('; ')} — archived change is immutable. Open a follow-up: init <name> --parent <change-id>, do not edit the original (ADR-0005)`);
+        process.exit(1);
+      }
       console.error(`STALE: ${problems.join('; ')} → regenerate the contract before executing`);
       process.exit(1);
     }
