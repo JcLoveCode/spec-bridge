@@ -191,11 +191,28 @@ export function detectProjectRoot(cwd) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // layout 探测：与 bridge.mjs detectLayout 同款（mirror，避免跨文件依赖）。
-// openspec/ 在场 → openspec，否则 standalone。
+// 修正（v1.3 Batch N 补丁）：bridge 历史归档目录在哪 = layout 真信号（archive 化石最准）。
+// 优先级：archive 历史 > openspec/config.yaml (CLI 标志) > 缺省 standalone。
 // ─────────────────────────────────────────────────────────────────────────────
 
+function hasAnyBridgeYaml(dir) {
+  if (!existsSync(dir)) return false;
+  for (const sub of readdirSync(dir)) {
+    if (existsSync(join(dir, sub, '.bridge.yaml'))) return true;
+  }
+  return false;
+}
+
 export function detectLayout(projectRoot) {
-  if (existsSync(join(projectRoot, 'openspec'))) {
+  const bridgeArchive = join(projectRoot, 'changes', 'archive');
+  const openspecArchive = join(projectRoot, 'openspec', 'changes', 'archive');
+  if (existsSync(bridgeArchive) && hasAnyBridgeYaml(bridgeArchive)) {
+    return { layout: 'standalone', changesDir: join(projectRoot, 'changes') };
+  }
+  if (existsSync(openspecArchive) && hasAnyBridgeYaml(openspecArchive)) {
+    return { layout: 'openspec', changesDir: join(projectRoot, 'openspec', 'changes') };
+  }
+  if (existsSync(join(projectRoot, 'openspec', 'config.yaml'))) {
     return { layout: 'openspec', changesDir: join(projectRoot, 'openspec', 'changes') };
   }
   return { layout: 'standalone', changesDir: join(projectRoot, 'changes') };

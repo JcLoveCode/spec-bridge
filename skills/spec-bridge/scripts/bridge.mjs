@@ -98,23 +98,51 @@ function currentHashes(changeDir) {
 
 function detectLayout(projectRoot) {
   const root = resolve(projectRoot);
-  if (existsSync(join(root, 'openspec'))) {
+  // 修正（v1.3 Batch N 补丁）：原探测只看 `openspec/` 目录存在——会把 OpenSpec CLI 本地安装
+  // （磁盘有、gitignored）误判为 openspec 布局，让 list 走 `openspec/changes/` 看不见 `changes/archive/` 历史。
+  // 新信号：bridge 历史归档目录在哪 = layout 真信号。
+  // 优先级：archive 历史化石 > openspec/config.yaml (OpenSpec CLI 标志) > 缺省 standalone。
+  const bridgeArchive = join(root, 'changes', 'archive');
+  const openspecArchive = join(root, 'openspec', 'changes', 'archive');
+  if (existsSync(bridgeArchive) && hasAnyBridgeYaml(bridgeArchive)) {
+    return { layout: 'standalone', changesDir: join(root, 'changes'), baselineDir: join(root, 'specs') };
+  }
+  if (existsSync(openspecArchive) && hasAnyBridgeYaml(openspecArchive)) {
+    return { layout: 'openspec', changesDir: join(root, 'openspec', 'changes'), baselineDir: join(root, 'openspec', 'specs') };
+  }
+  if (existsSync(join(root, 'openspec', 'config.yaml'))) {
     return { layout: 'openspec', changesDir: join(root, 'openspec', 'changes'), baselineDir: join(root, 'openspec', 'specs') };
   }
   return { layout: 'standalone', changesDir: join(root, 'changes'), baselineDir: join(root, 'specs') };
+}
+
+function hasAnyBridgeYaml(dir) {
+  if (!existsSync(dir)) return false;
+  for (const sub of readdirSync(dir)) {
+    if (existsSync(join(dir, sub, '.bridge.yaml'))) return true;
+  }
+  return false;
 }
 
 function listChanges(projectRoot) {
   const { layout, changesDir } = detectLayout(projectRoot);
   const changes = [];
   const untracked_artifacts = [];
+  let archived_count = 0;
   // v1.3 Batch 3 (D4)：untracked 探测信号——与 cmd-adopt.mjs ADOPT_SIGNALS 同源。
   const ADOPT_SIGNALS = ['proposal.md', 'design.md', 'tasks.md', 'execution-contract.md'];
   if (existsSync(changesDir)) {
     for (const dir of readdirSync(changesDir)) {
-      if (dir === 'archive') continue;
       const dirPath = join(changesDir, dir);
       if (!statSync(dirPath).isDirectory()) continue;
+      if (dir === 'archive') {
+        // v1.3 Batch N 补丁：只数不展示——让 agent 知道"有 N 条历史"，
+        // 但不破坏 D5 "skip archive 避免喧宾夺主"。详情走 pattern/mention。
+        archived_count = readdirSync(dirPath).filter(
+          sub => statSync(join(dirPath, sub)).isDirectory()
+        ).length;
+        continue;
+      }
       const state = existsSync(join(dirPath, '.bridge.yaml')) ? readState(dirPath) : null;
       if (state) {
         changes.push({
@@ -142,7 +170,7 @@ function listChanges(projectRoot) {
       }
     }
   }
-  return { layout, changesDir, changes, untracked_artifacts };
+  return { layout, changesDir, changes, untracked_artifacts, archived_count };
 }
 
 async function main() {
