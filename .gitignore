@@ -3,3 +3,10 @@
 
 # Node
 node_modules/
+
+# OpenSpec local install (v1.3 已识别为外部 SDD 栈；
+# 仓库层 setup 不是桥的产物，留本地不追踪)
+openspec/
+
+# IDE plugin local checkout (OpenSpec skill 副本，本地副产物)
+.codebuddy/
