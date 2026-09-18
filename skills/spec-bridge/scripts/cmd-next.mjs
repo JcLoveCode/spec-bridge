@@ -21,6 +21,41 @@ const STAGE_ADVICE = {
 // v1.2 follow-up B7：next 字段形如 "Batch N: ..." 时末尾追加显式编号（设计 D2）。
 const BATCH_RE = /^\s*Batch\s+(\d+)\b/i;
 
+// v1.3 Batch 1 (D5 + D8)：cross-protocol router — 按 stage + workflow_kind 推荐 use_skill。
+// 仅推荐不执行（ADR-0004 不代理调用）。planning 已在 matt kind 推荐 use_skill（小雾 + 大雾档位）。
+// 终态（archived / patching / abandoned）和前置阶段 planning@builtin@openspec 不路由。
+const PROTOCOL_HINTS = {
+  planning: {
+    builtin: [],
+    openspec: [
+      '→ use_skill openspec-propose  // 出 proposal.md',
+    ],
+    matt: [
+      '→ use_skill grill-with-docs  // 小雾：一个 session 装得下',
+      '→ use_skill wayfinder  // 大雾：绿地 / 季度级 — 出意图地图后 handoff to-spec',
+    ],
+  },
+  executing: {
+    builtin: [
+      '→ use_skill test-driven-development  // TDD 铁律',
+      '→ use_skill requesting-code-review  // 批末审查',
+    ],
+    openspec: [
+      '→ use_skill openspec-apply-change  // 写代码 + apply',
+      '→ use_skill test-driven-development  // TDD 铁律',
+    ],
+    matt: [
+      '→ use_skill spec-executor  // matt 整栈执行',
+      '→ use_skill tdd  // matt TDD',
+    ],
+  },
+  contracted: {},
+  contracted_approved: {},
+  patching: {},
+  archived: {},
+  abandoned: {},
+};
+
 export async function run(args, { stdout = process.stdout, stderr = process.stderr } = {}) {
   const changeDir = args[0];
   if (!changeDir) {
@@ -44,6 +79,15 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   stdout.write(`stage:  ${stage}\n`);
   stdout.write(`next:   ${state.next ?? '(unset — run: state next <dir> <hint>)'}\n`);
   stdout.write(`→ ${advice}\n`);
+  // v1.3 Batch 1 (D5/D8)：按 stage + workflow_kind 追加 cross-protocol 路由段（仅推荐）。
+  const workflowKind = state.workflow_kind || 'builtin';
+  const protocolHints = PROTOCOL_HINTS[effectiveStage]?.[workflowKind] ?? [];
+  if (protocolHints.length > 0) {
+    stdout.write('→ protocol:\n');
+    for (const hint of protocolHints) {
+      stdout.write(`  ${hint}\n`);
+    }
+  }
   // v1.2 follow-up B7：executing + next 是 Batch 格式 → 末尾追加显式 Batch 编号。
   const batchHint = state.next && BATCH_RE.exec(state.next);
   if (effectiveStage === 'executing' && batchHint) {

@@ -1,0 +1,29 @@
+# .bridge.yaml — spec-bridge change state
+# Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
+
+# === Lifecycle ===
+stage: archived
+layout: standalone
+branch: v1.3
+
+# === Workflow (v1.2) ===
+workflow_kind: builtin
+parent: 2026-09-18-v1-3-research-xrouter
+parent_artifacts_hash: sha256:485ccbee1045fea48452c58958ef1ece7cb3685b5f62f307f888d941de7cf217
+
+# === Capabilities (probed once per change) ===
+capabilities: null
+tags: null
+
+# === Contract gate ===
+contract_approved: true
+artifacts_hash: sha256:2999b4faa8032330225e725c81b8d2e967d2111e63bc393eb02b29d16e8a7f8a
+contract_hash: sha256:36f5c1661c4c0a80f3b301920fb1cd6de6e5454c3fe58cdb159476c7d6a03ec2
+
+# === Publication receipt (written by vendored sync) ===
+published: true
+spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1NjozM2YyZmIxYjBiNWY1ODgxNjIzNGZkMjE5YWNiNTI2MmI5NjNjYTlmNjRjMjBkMzZkYmJiNWIyMWQxNjE0MmI4IiwiYmFzZWxpbmVfYmVmb3JlX2hhc2giOiJzaGEyNTY6ZjkzMjhjNzk4ZjBhMTYxY2Q4MzBmYWY5MTJjNDNkNmEwNTFjZjYwNmQzZjI4N2JlNTM5ZTNkOTQ2YWUxMTI5YiIsImJhc2VsaW5lX2FmdGVyX2hhc2giOiJzaGEyNTY6ODgxMWI5YzQ2MzE3NTUxZjI1YmUyOTQ3NWZkMDJkOTViNTI4MzJkNjI1MGU5ZDk1ZTI3ODg5MDczNDJjYzBmNyIsImNhcGFiaWxpdGllcyI6WyJ2MS0zLXNkZC1tZXRhLW5hdmlnYXRvciJdfQ
+
+# === Resume ===
+next: Batch N: TN.1 sync → TN.2 verify → TN.3 why.md → TN.4 git mv → TN.5 state archived → TN.6 push
+last_event: stage: executing → archived

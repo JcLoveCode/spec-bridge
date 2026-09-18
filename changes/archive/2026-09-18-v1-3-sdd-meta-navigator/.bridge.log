@@ -1,0 +1,9 @@
+- 2026-09-18T08:00:03.660Z init: scaffolded v1-3-sdd-meta-navigator (layout=standalone, workflow=builtin, capabilities=unset, parent=2026-09-18-v1-3-research-xrouter)
+- 2026-09-18T08:32:27.921Z stage: planning → contracted
+- 2026-09-18T08:34:05.813Z stage: contracted → executing
+- 2026-09-18T08:34:05.927Z next: B1 executing: T1.1 写 tests/xrouter-protocol.test.mjs (RED) → T1.2 改 cmd-next.mjs 加 PROTOCOL_HINTS (GREEN)
+- 2026-09-18T08:36:02.556Z next: Batch 2: T2.1 改 cmd-init.mjs 按 --workflow-kind 分支（openspec/matt 只建台账；builtin 出 5 模板）→ T2.2 写 tests/init-workflow-kind.test.mjs 3 case
+- 2026-09-18T08:41:59.576Z next: Batch 3: T3.1 新 cmd-adopt.mjs（接老 PR / openspec changelog → .bridge.yaml + first event）→ T3.2 改 cmd-list.mjs 加 untracked artifacts 段 → T3.3 bridge.mjs dispatch 加 adopt 入口 → T3.4 写 tests/adopt.test.mjs（R3+R4） + 2 个 fixture
+- 2026-09-18T08:50:04.171Z next: Batch 4: T4.1 SKILL.md 加 §6 跨协议路由 → T4.2 CONTEXT.md 升级能力阶梯 v2 (D5+D8) → T4.3 写 ADR-0008 (wayfinder 档位语义) → T4.4 写 docs-sync-test 自证 B1+B2+B3 文档与代码一致
+- 2026-09-18T09:06:23.615Z next: Batch N: TN.1 sync → TN.2 verify → TN.3 why.md → TN.4 git mv → TN.5 state archived → TN.6 push
+- 2026-09-18T09:10:59.940Z stage: executing → archived

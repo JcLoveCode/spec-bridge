@@ -19,13 +19,13 @@ description: Single-entry workflow router that bridges user-installed OpenSpec (
 本 skill 目录下的 `scripts/bridge.mjs` 是唯一确定性入口（下文所有命令里的 `<bridge>` 指它的绝对路径，
 即本 SKILL.md 所在目录拼 `scripts/bridge.mjs`）。Node ≥ 20。
 
-**查命令**：`node <bridge>` 无参数 = dump 全部 13 条命令清单（最快查用法，不依赖 IDE 显示）。
+**查命令**：`node <bridge>` 无参数 = dump 全部 14 条命令清单（最快查用法，不依赖 IDE 显示）。
 
 ## 1. 入口例程（每次触发先走这五步，不许跳过）
 
 ```
 ① 定位项目根（git root 或 cwd）→ node <bridge> layout <project-root>
-② node <bridge> list <project-root>          # 活跃 change 清单（自动跳过 archive/）
+② node <bridge> list <project-root>          # 活跃 change 清单 + untracked_artifacts[] 段
 ③ 三分流：
    a. 有活跃 change + 消息是继续/实现/归档它 → 读该 change 的 .bridge.yaml，恢复到对应阶段
    b. 消息是开新变更 → §3 起头
@@ -33,6 +33,11 @@ description: Single-entry workflow router that bridges user-installed OpenSpec (
 ④ 多个活跃 change 且意图不明 → 列出清单让用户选，绝不猜
 ⑤ 恢复时先报一行：当前 change / stage / next / 能力快照，然后续做
 ```
+
+**多栈并存守卫**（v1.3 起，list 输出结构变了）：
+- `list` 返回 JSON 有两段——`changes[]`（tracked，台账已建）和 `untracked_artifacts[]`（产物在但没台账，如外栈的 openspec/matt 旧 change）。
+- 有 `untracked_artifacts` 项时，**先停下来问用户**："要不要 `bridge adopt` 接管？"——别自动开新 change 把外栈历史覆盖掉。
+- 三栈（openspec / matt / builtin）可能**同时存在**于一个仓库：list 输出的每条 change 带 `workflow_kind` 字段标识，混着用没问题；归档/同步各自走各自的。
 
 换对话、聊岔了、隔了几天——重复这套例程即可，磁盘状态就是全部真相。
 产物与状态矛盾时，**以产物为准**（状态文件丢了就按内容重建）。
@@ -65,6 +70,12 @@ change 目录名：`<需求号>-<slug>`（一个需求号分支可承载多个 c
 
 `changes/<name>/{proposal.md, specs/<capability>/spec.md, design.md, tasks.md}`
 （openspec 在场则由它生成；Stack B 用 `to-spec`；Stack C 给模板手写——形态必须同构）。
+
+> **v1.3 按 `workflow_kind` 分支产物路径**（设计 D3）：
+> - `bridge init foo --workflow-kind openspec` → **只建台账**（`.bridge.yaml` + `.bridge.log` + 空 `specs/<cap>/`），不写 5 模板；产物由 openspec 自出。
+> - `bridge init foo --workflow-kind matt` → 同上，只建台账；产物由 `to-spec` 自出。
+> - `bridge init foo` 或 `--workflow-kind builtin`（默认）→ 5 模板（proposal/design/tasks/execution-contract + specs/spec.md），与 v1.2 R1 行为一致。
+> 接外栈已存在的 change 用 `bridge adopt <dir>`（不写产物、不动文件、只建台账 + 大事记；见 §5 / R4）。
 
 - delta spec 格式：`## ADDED/MODIFIED/REMOVED/RENAMED Requirements` + `### Requirement: 名称`
   + `#### Scenario:`（WHEN/THEN）。中英文标题均可，路径必须 `specs/<capability>/spec.md`。
@@ -165,9 +176,10 @@ node <bridge> hashes <change-dir> --check   # 漂移 → 停，回到 contracted
 | 命令 | 用途 |
 |---|---|
 | `layout <root>` | 探测 openspec/standalone 布局 |
-| `list <root>` | 活跃 change 清单 |
-| `init <name> [flags]` | 一键脚手架（`--workflow-kind` / `--parent` 见 §3） |
-| `next <dir>` | 导航：stage + next + 按拍建议动作（纯读） |
+| `list <root>` | 活跃 change 清单（含 `untracked_artifacts[]` 段——v1.3） |
+| `init <name> [flags]` | 一键脚手架（`--workflow-kind` 分支产物 / `--parent` 见 §3） |
+| `adopt <dir>` | 接外栈已存在 change——只建台账，不动产物（v1.3 B3a） |
+| `next <dir>` | 导航：stage + next + 按栈 `→ protocol:` 路由（v1.3） |
 | `state init/get/set/next <dir>` | 状态读写（含 workflow_kind/parent/tags） |
 | `hashes <dir> [--check]` | 产物摘要 / 契约过期检测（归档漂移提示续作） |
 | `sync <dir>` | delta → 根基线 + 发布回执（archive/ 路径 exit 4） |
@@ -176,3 +188,59 @@ node <bridge> hashes <change-dir> --check   # 漂移 → 停，回到 contracted
 | `mention/rootcause <dir> --tag <t>` | 模式信号 + 全库历史计数（ADR-0007） |
 | `rebuttal <dir> <一句话>` | 复验异议落盘（rebuttals/，零状态变更） |
 | `event <dir> <text>` | 追加大事记到 `.bridge.log` |
+
+> v1.3 起 14 条（原 13 + 新增 `adopt`）。详见 §6 跨协议路由 + ADR-0008。
+
+## 6. 跨协议路由（v1.3，cross-protocol router）
+
+> **角色重申**（承接 ADR-0004）：桥**只推荐** use_skill，**不代理调用**——下文出现的 `use_skill X` 都是给 agent 看的字面量提示，不是 spawn。
+
+### 6.1 路由表（stage × workflow_kind）
+
+`bridge next` 输出末尾的 `→ protocol:` 段按 `stage + workflow_kind` 二维查表给出 use_skill 推荐：
+
+| stage \ kind | builtin（兜底） | openspec | matt |
+|---|---|---|---|
+| **planning** | （不推荐，由内置协议自带产物生成） | `use_skill openspec-propose`（出 proposal.md） | `use_skill grill-with-docs`（小雾）<br>`use_skill wayfinder`（大雾 / 季度级 — 出意图地图后 handoff to-spec） |
+| **contracted / contracted_approved** | （不推荐 — 等批准门） | — | — |
+| **executing** | `use_skill test-driven-development`<br>`use_skill requesting-code-review` | `use_skill openspec-apply-change`<br>`use_skill test-driven-development` | `use_skill spec-executor`<br>`use_skill tdd` |
+| **patching / archived / abandoned** | — | — | — |
+
+> **不路由的位置**：前置阶段（planning@builtin@openspec）由各自产物生成器接管，桥不必指；终态（archived/patching/abandoned）路由只读，不写执行槽位。
+
+### 6.2 能力阶梯 v2（五级）
+
+`§2` 原三级（原生 → matt → 内置）升级为五级，按**槽位**补位不按栈整体降级：
+
+| 级 | 含义 | 示例 |
+|---|---|---|
+| **L1 原生** | 项目层的官方插件 | openspec 的规划产物、superpowers 的 TDD/审查 |
+| **L2 matt** | 整栈备胎 | matt `spec-executor` / `to-spec` / `tdd` |
+| **L3 状态机中断** | 桥的导航员角色接管 | `bridge next` 报拍点、`bridge adopt` 接管外栈 |
+| **L4 agent 自身** | LLM 即技能，CLI 不替代 | 写决策摘要、批内化解方案澄清、模式信号判断 |
+| **L5 桥档案员保留** | 桥本职（无法替代） | 台账读写、归档蒸馏、回执签发 |
+
+> **关键不变量**：每槽位独立探测、独立兜底（"只装一半不降级换栈"，§2）；桥不替代 L1/L2，只在 L3/L5 现身；L4 是 LLM 的本职，不是 CLI 的事。
+
+### 6.3 sync 兼容规则
+
+跨栈归档必须满足：
+
+1. **台账共享**：`changes/<name>/.bridge.yaml` 一份；`workflow_kind` 字段标识走哪条流程线，不分目录。
+2. **归档目录共享**：所有栈的 `git mv` 都进 `changes/archive/<YYYY-MM-DD>-<name>/`，不分栈归档。
+3. **根基线共享**：`specs/<capability>/spec.md` 不分栈 — `sync` 引擎（vendored）做 delta apply，对全部栈都生效；同栈/跨栈续作均可（`init --parent <archived-id>`）。
+4. **回执盖同基线**：`sync` 写入的 sha256 回执对应 `spec.md`，不分栈覆盖；`why.md` 单向蒸馏同此。
+
+> 例：matt 栈开 `foo` change → openspec 栈续作 `foo-2 --parent foo` → 内置栈归档 → 三栈共享台账、归档目录、根基线。
+
+### 6.4 与 ADR-0004 的关系
+
+桥**仍是导航员 + 档案员**（ADR-0004），不调度。§6.1 的 `use_skill X` 是 **stdin 提示**——给 agent 看的"下一步该调哪个 skill"——不 spawn、不代理、不阻塞。同命令同一拍同一输出，agent 看着决定执行哪个 use_skill，桥不干预。
+
+新增的设计点是：
+
+- **跨栈感知**：`bridge next` 现在读 `workflow_kind`，出对应栈的 use_skill 列表；不再是单一内置协议叙事（ADR-0001 的"单入口路由"含义扩展为"按栈路由"，仍然单入口）。
+- **三栈并存守卫**：`bridge list` 的 `untracked_artifacts[]` 段让外栈历史产物显形，避免被新 builtin change 覆盖（D4 / B3a）。
+- **能力阶梯 L3/L4 区分**：把"状态机中断"和"agent 自身"从原"次选/兜底"拆出来——前者是 CLI 接管能力空白，后者是 LLM 本职不该 CLI 化。
+
+详见 ADR-0008（设计源）+ §1 多栈并存守卫 + CONTEXT.md 能力阶梯 v2 术语。

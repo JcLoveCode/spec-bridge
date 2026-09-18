@@ -12,9 +12,16 @@ _避免_：任务（任务是 change 内的批次）、需求（需求是分支�
 承载 N 个变更的 git 分支，命名 `<需求号>`，是合并/推送/PR 的原子。变更与分支是 N:1。
 _避免_：把"需求"当作 change 的同义词。
 
-**能力阶梯（capability ladder）**：
-探测结果决定每个功能槽位由谁供职：原生（openspec/superpowers）→ 次选（matt）→ 兜底（内置）。
-按槽位补位，不按环境整体降级。
+**能力阶梯（capability ladder，v2 五级）**：
+探测结果决定每个功能槽位由谁供职，分五级（L1~L5）：
+- **L1 原生**：项目层官方插件（openspec / superpowers）
+- **L2 matt**：整栈备胎（matt `spec-executor` / `to-spec` / `tdd`）
+- **L3 状态机中断**：桥的导航员接管（`bridge next` / `bridge adopt`）
+- **L4 agent 自身**：LLM 即技能（写决策摘要、批内化解方案澄清、模式信号判断）——CLI 不替代
+- **L5 桥档案员保留**：桥本职（台账读写、归档蒸馏、回执签发）
+
+按槽位补位不按栈整体降级；桥只在 L3/L5 现身，不替代 L1/L2，也不冒充 L4。
+（旧版"原生 → matt → 内置"三级语义合并入 v2 五级：原"内置"= L5，本职；新加 L3 状态机中断 + L4 agent 自身作为明确边界。）
 
 **功能槽位（slot）**：
 工作流的一个独立能力位：规划产物、契约压缩、执行、调试、审查、归档合并、知识沉淀。
@@ -58,6 +65,17 @@ _避免_：调度员（桥不代理调用外部工具，见 ADR-0004）。
 **工作流类型（workflow kind）**：
 变更台账 `.bridge.yaml` 顶层字段，标记该变更由哪套流程承载（`openspec | matt | builtin`）。台账共享，流程独立。
 
+**SDD 产物**（v1.3 新术语）：
+由 spec-bridge **内置协议生成的产物**（`proposal.md` / `design.md` / `tasks.md` / `execution-contract.md` / `specs/<cap>/spec.md` 模板 + `bridge init` 用内置模板写的实例）。
+_避免_："SDD 模板"——模板是字面常量，产物是 fill 后的实际文件；`bridge init --workflow-kind builtin` 才会写这些。
+
+**外部产物**（v1.3 新术语）：
+由**外栈工具生成的产物**——openspec 自出的 `proposal.md` / `design.md` / `tasks.md` / `specs/<cap>/spec.md`、matt `to-spec` 自出的意图地图等。桥**不重写、不生成、不覆盖**，只接（`bridge adopt`）或留（`bridge list` 的 `untracked_artifacts[]` 段提示）。
+_避免_：混称"栈产物"——栈是项目层概念，外部产物是文件来源概念。
+
+**跨协议路由（cross-protocol router，v1.3 新术语）**：
+`bridge next` 在 advice 段后追加 `→ protocol:` 段，按 `stage + workflow_kind` 二维查表给出 use_skill 推荐。仅推荐不代理调用（ADR-0004 不调度 + ADR-0008 延伸）。
+
 **续作（follow-up）**：
 引用已归档变更的新变更，metadata 携带 `parent` + `parent_artifacts_hash`。
 _避免_：修订（归档内容不可修改，修正一律开续作，见 ADR-0005）。
@@ -89,7 +107,8 @@ _避免_：桥持久化会话状态。
 - 一个**需求号分支**承载 N 个**变更**
 - 一个**变更**产出一份**契约**，消费一份**根基线**增量，留下一份**发布回执**
 - **why 笔记**从属于**根基线**的 capability，晚于**发布回执**产生
-- **功能槽位**属于**能力阶梯**的一层；**栈**是项目层的整体选择
+- **功能槽位**属于**能力阶梯（v2）**的一层（L1~L5）；**栈**是项目层的整体选择
 - 一个**续作**引用一个已归档**变更**的 `artifacts_hash`；因果链由续作父引用串联
 - **模式标签**跨**变更**聚类，与**因果链**正交；**提及**是模式标签的信号源
 - **复验异议**从属于已归档**变更**；是否升级为**续作**由人决定
+- **SDD 产物** vs **外部产物**：桥的内置 vs 外栈工具栈同一文件路径生成物；台账可同时管两边（`bridge adopt` 接管外部），但产物所有权不变

@@ -289,11 +289,16 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   mkdirSync(capDir, { recursive: true });
   const values = { NAME: name, CAP: flags.capability || defaultCapability(name) };
 
-  writeFileSync(join(changeDir, 'proposal.md'), fillTemplate(PROPOSAL_TEMPLATE, values), 'utf-8');
-  writeFileSync(join(changeDir, 'design.md'), fillTemplate(DESIGN_TEMPLATE, values), 'utf-8');
-  writeFileSync(join(changeDir, 'tasks.md'), fillTemplate(TASKS_TEMPLATE, values), 'utf-8');
-  writeFileSync(join(capDir, 'spec.md'), fillTemplate(SPEC_TEMPLATE, values), 'utf-8');
-  writeFileSync(join(changeDir, 'execution-contract.md'), fillTemplate(CONTRACT_TEMPLATE, values), 'utf-8');
+  // v1.3 Batch 2 (D3)：按 --workflow-kind 分支产物路径。
+  // openspec / matt → 只建台账 + 空 specs/，避免与外栈产物生成器冲突（openspec 自出 proposal/design/tasks/spec；matt 走 to-spec）。
+  // builtin → 现状 5 模板（v1.2 R1 向后兼容）。
+  if (workflowKind === 'builtin') {
+    writeFileSync(join(changeDir, 'proposal.md'), fillTemplate(PROPOSAL_TEMPLATE, values), 'utf-8');
+    writeFileSync(join(changeDir, 'design.md'), fillTemplate(DESIGN_TEMPLATE, values), 'utf-8');
+    writeFileSync(join(changeDir, 'tasks.md'), fillTemplate(TASKS_TEMPLATE, values), 'utf-8');
+    writeFileSync(join(capDir, 'spec.md'), fillTemplate(SPEC_TEMPLATE, values), 'utf-8');
+    writeFileSync(join(changeDir, 'execution-contract.md'), fillTemplate(CONTRACT_TEMPLATE, values), 'utf-8');
+  }
 
   // 初始化 .bridge.yaml + 第一条大事记（D5：仅写状态，不写 hash / 回执）。
   const next = writeState(changeDir, {

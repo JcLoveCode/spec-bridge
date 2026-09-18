@@ -18,6 +18,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path, { join, resolve } from 'node:path';
 import { run as runSync } from './vendor/cmd-sync.mjs';
 import { run as runInit } from './cmd-init.mjs';
+import { run as runAdopt } from './cmd-adopt.mjs';
 import { run as runNext } from './cmd-next.mjs';
 import { run as runPattern } from './cmd-pattern.mjs';
 import { run as runMention, runRootcause } from './cmd-mention.mjs';
@@ -32,6 +33,7 @@ function usage(code = 2) {
     'Usage: bridge <command> [args]',
     '  init <name> [--capability <c>] [--branch <b>] [--layout <l>] [--capabilities <c>]',
     '                                     scaffold a new change dir (templates + state + log)',
+    '  adopt <change-dir>                 register an existing external change dir (no template writes; v1.3 D4)',
     '  next <change-dir>                  navigation: stage + next hint + advised action',
     '  pattern --tag <t> [root]           cross-change tag aggregation (incl. archive/)',
     '  mention <dir> --tag <t> [--note s] record pattern signal + history count (ADR-0007)',
@@ -43,6 +45,7 @@ function usage(code = 2) {
     '  state set <change-dir> <field> <value>',
     '  state next <change-dir> <one-line resume hint>',
     '  event <change-dir> <one-line event>',
+    '  rebuttal <change-dir> <one-line objection>',
     '  hashes <change-dir> [--check]      artifact digests / contract staleness check',
     '  layout <project-root>              detect openspec vs standalone layout',
     '  list <project-root>                list active changes (skips archive/)',
@@ -104,21 +107,42 @@ function detectLayout(projectRoot) {
 function listChanges(projectRoot) {
   const { layout, changesDir } = detectLayout(projectRoot);
   const changes = [];
+  const untracked_artifacts = [];
+  // v1.3 Batch 3 (D4)：untracked 探测信号——与 cmd-adopt.mjs ADOPT_SIGNALS 同源。
+  const ADOPT_SIGNALS = ['proposal.md', 'design.md', 'tasks.md', 'execution-contract.md'];
   if (existsSync(changesDir)) {
     for (const dir of readdirSync(changesDir)) {
       if (dir === 'archive') continue;
       const dirPath = join(changesDir, dir);
       if (!statSync(dirPath).isDirectory()) continue;
       const state = existsSync(join(dirPath, '.bridge.yaml')) ? readState(dirPath) : null;
-      changes.push({
-        name: dir,
-        has_state: Boolean(state),
-        stage: state ? state.stage : null,
-        next: state ? state.next : null,
-      });
+      if (state) {
+        changes.push({
+          name: dir,
+          has_state: true,
+          stage: state.stage,
+          next: state.next,
+        });
+      } else {
+        // untracked 段：列出有 artifact 无台账的目录（D4 list 副产品）
+        const artifacts = [];
+        for (const f of ADOPT_SIGNALS) {
+          if (existsSync(join(dirPath, f))) artifacts.push(f);
+        }
+        const specsDir = join(dirPath, 'specs');
+        if (existsSync(specsDir)) {
+          for (const cap of readdirSync(specsDir)) {
+            const specFile = join(specsDir, cap, 'spec.md');
+            if (existsSync(specFile)) artifacts.push(`specs/${cap}/spec.md`);
+          }
+        }
+        if (artifacts.length > 0) {
+          untracked_artifacts.push({ name: dir, artifacts });
+        }
+      }
     }
   }
-  return { layout, changesDir, changes };
+  return { layout, changesDir, changes, untracked_artifacts };
 }
 
 async function main() {
@@ -127,6 +151,12 @@ async function main() {
 
   if (command === 'init') {
     const result = await runInit(rest);
+    process.exit(result.exitCode ?? 0);
+  }
+
+  // v1.3 Batch 3 (D4)：adopt 接入外栈已存在 change，只写台账不动产物。
+  if (command === 'adopt') {
+    const result = await runAdopt(rest);
     process.exit(result.exitCode ?? 0);
   }
 
