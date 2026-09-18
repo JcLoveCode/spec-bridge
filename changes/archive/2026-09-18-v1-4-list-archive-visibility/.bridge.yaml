@@ -2,7 +2,7 @@
 # Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
 
 # === Lifecycle ===
-stage: executing
+stage: archived
 layout: standalone
 branch: v1.4
 
@@ -26,4 +26,4 @@ spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1NjozNDUxND
 
 # === Resume ===
 next: Batch 3-4: T3.1 SKILL.md §5 list 行补 archived_count → T3.2 CONTEXT.md 补 layout 探测规则 → T4.1 ADR-0009 (D1+D2+D3) → T4.2 CONTEXT 引用 ADR-0009 → sync → verify → git mv → archived
-last_event: next: Batch 3-4: T3.1 SKILL.md §5 list 行补 archived_count → T3.2 CONTEXT.md 补 layout 探测规则 → T4.1 ADR-0009 (D1+D2+D3) → T4.2 CONTEXT 引用 ADR-0009 → sync → verify → git mv → archived
+last_event: Batch N complete: synced + verified + why.md distilled + git mv + state archived + commit + pushed
