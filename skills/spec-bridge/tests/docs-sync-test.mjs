@@ -14,12 +14,14 @@
 // 做集合相等 / 包含断言。零进程副作用。
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');                     // skills/spec-bridge/
+const PROJECT_ROOT = join(HERE, '..', '..', '..'); // spec-bridge/ (仓库根)
 const SKILL = join(ROOT, 'SKILL.md');
 const CONTEXT = join(ROOT, 'CONTEXT.md');
 const ADR_DIR = join(ROOT, 'docs', 'adr');
@@ -231,4 +233,39 @@ test('R5 场景 6：SKILL.md §0 "dump 全部 N 条命令" 与 §5 速查表命�
   const skillCommands = extractSkillMdCommands(skillMd);
   assert.ok(skillCommands.size === claimed,
     `§0 claims "dump 全部 ${claimed} 条" but §5 only lists ${skillCommands.size} commands ([${[...skillCommands].sort().join(', ')}]) — drift`);
+});
+test('R6（v1.4）：bridge list 输出必有 archived_count 数字字段', () => {
+  // cwd 用 PROJECT_ROOT（spec-bridge/），不是 ROOT（skills/spec-bridge/）
+  // —— 后者没有 archive/ 子目录，archived_count 必为 0
+  const out = execFileSync(process.execPath, [join(ROOT, 'scripts/bridge.mjs'), 'list', PROJECT_ROOT],
+    { encoding: 'utf-8', cwd: PROJECT_ROOT });
+  const parsed = JSON.parse(out);
+  assert.ok('archived_count' in parsed,
+    `bridge list output missing 'archived_count' field — v1.4 list archived_count not landed`);
+  assert.strictEqual(typeof parsed.archived_count, 'number',
+    `bridge list archived_count must be number, got ${typeof parsed.archived_count}`);
+  // 仓库层断言：spec-bridge 仓库 archive 下确有 5 条（v1.1 / v1.2 / v1.2-b7 / v1.3-research / v1.3-sdd）
+  assert.strictEqual(parsed.archived_count, 5,
+    `bridge list archived_count expected 5 in spec-bridge repo, got ${parsed.archived_count}`);
+});
+
+test('R7（v1.4）：detectLayout bridge.mjs 主版与 cmd-init.mjs mirror 一致 + ADR-0009 引用存在', () => {
+  const bridgeText = readFileSync(BRIDGE, 'utf-8');
+  const initText = readFileSync(CMD_INIT, 'utf-8');
+  // 两文件必须都含 archive 化石优先探测——抽 hasAnyBridgeYaml 辅助
+  assert.match(bridgeText, /hasAnyBridgeYaml/, 'bridge.mjs detectLayout missing hasAnyBridgeYaml helper');
+  assert.match(initText, /hasAnyBridgeYaml/, 'cmd-init.mjs mirror detectLayout missing hasAnyBridgeYaml helper');
+  // 两文件必须都按优先级 1) bridge archive 2) openspec archive 3) config.yaml 4) standalone
+  assert.match(bridgeText, /changes['"]?\s*,\s*['"]?archive['"]?/, 'bridge.mjs not detecting changes/archive/ first');
+  assert.match(initText, /changes['"]?\s*,\s*['"]?archive['"]?/, 'cmd-init.mjs not detecting changes/archive/ first');
+  assert.match(bridgeText, /openspec['"]?\s*,\s*['"]?changes['"]?\s*,\s*['"]?archive['"]?/, 'bridge.mjs not detecting openspec/changes/archive/ second');
+  assert.match(bridgeText, /config\.yaml/, 'bridge.mjs not detecting openspec/config.yaml third');
+  // ADR-0009 存在 + CONTEXT.md 引用
+  const adr0009 = readdirSync(ADR_DIR).find(f => f.startsWith('0009-'));
+  assert.ok(adr0009, 'ADR-0009 file missing under docs/adr/ — v1.4 T4.1 not landed yet');
+  assert.match(readFileSync(join(ADR_DIR, adr0009), 'utf-8'), /archive.*fossil|fossil.*priority|化石.*优先/i,
+    `ADR-0009 (${adr0009}) should describe archive-fossil-priority layout detection`);
+  const ctx = readFileSync(CONTEXT, 'utf-8');
+  assert.match(ctx, /ADR-0009/, 'CONTEXT.md missing ADR-0009 reference');
+  assert.match(ctx, /archived_count/, 'CONTEXT.md missing archived_count term — v1.4 not landed');
 });

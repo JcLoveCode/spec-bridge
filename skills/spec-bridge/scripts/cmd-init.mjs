@@ -2,7 +2,7 @@
 // 与 cmd-sync.mjs 风格对齐：default export run(args, { stdout, stderr })。
 // 模板为 ES module exports 的 string constants（D2）。不写 hash / 回执 / 调 sync（D5）。
 import { spawnSync as spawnShim } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
 import { basename, join, resolve, sep } from 'node:path';
 import { appendEvent, readState, writeState, resolveParent } from './vendor/bridge-state.mjs';
 

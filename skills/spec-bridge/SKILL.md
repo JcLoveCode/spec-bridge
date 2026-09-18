@@ -176,7 +176,7 @@ node <bridge> hashes <change-dir> --check   # 漂移 → 停，回到 contracted
 | 命令 | 用途 |
 |---|---|
 | `layout <root>` | 探测 openspec/standalone 布局 |
-| `list <root>` | 活跃 change 清单（含 `untracked_artifacts[]` 段——v1.3） |
+| `list <root>` | 活跃 change 清单（含 `untracked_artifacts[]` 段——v1.3，`archived_count` 字段报告 archive 历史条数——v1.4） |
 | `init <name> [flags]` | 一键脚手架（`--workflow-kind` 分支产物 / `--parent` 见 §3） |
 | `adopt <dir>` | 接外栈已存在 change——只建台账，不动产物（v1.3 B3a） |
 | `next <dir>` | 导航：stage + next + 按栈 `→ protocol:` 路由（v1.3） |

@@ -1,0 +1,29 @@
+# .bridge.yaml — spec-bridge change state
+# Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
+
+# === Lifecycle ===
+stage: executing
+layout: standalone
+branch: v1.4
+
+# === Workflow (v1.2) ===
+workflow_kind: builtin
+parent: 2026-09-18-v1-3-sdd-meta-navigator
+parent_artifacts_hash: sha256:2999b4faa8032330225e725c81b8d2e967d2111e63bc393eb02b29d16e8a7f8a
+
+# === Capabilities (probed once per change) ===
+capabilities: null
+tags: null
+
+# === Contract gate ===
+contract_approved: true
+artifacts_hash: sha256:1a43f39163d13b8978eae385b6e50fa994f280f71d9bf74e81a406cdb087fa48
+contract_hash: sha256:e2b54f0d0be68f414a233bec244bdda8bc586dd2e1fc5374e44bc28bb5fa2e09
+
+# === Publication receipt (written by vendored sync) ===
+published: true
+spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1NjozNDUxNDZmMzA4MWEzYzJiNTIyNGYzZTMxMzlhMmZiMTlkNzUyN2E4YzIyZjkzZjJmZTE0Y2E2MGU0NjYzYThjIiwiYmFzZWxpbmVfYmVmb3JlX2hhc2giOiJzaGEyNTY6N2JmMmUyZDljMjQyNjM3MDcwYTE4YjdiYmUzNjE0ZWE2ZWVhMGJiODAyMjJkMGY2NDU2NmYyOGJkYjBlOTEwZSIsImJhc2VsaW5lX2FmdGVyX2hhc2giOiJzaGEyNTY6MDA5ZjFlYzM5Y2IzNmQ5NGQ5YWJmZWNiYjU4N2Y1YjEwOWQzZTk4NWM3NTRiYTY4N2FhNWIxODM5NjdmOTY0YiIsImNhcGFiaWxpdGllcyI6WyJsaXN0LWFyY2hpdmUtdmlzaWJpbGl0eSJdfQ
+
+# === Resume ===
+next: Batch 3-4: T3.1 SKILL.md §5 list 行补 archived_count → T3.2 CONTEXT.md 补 layout 探测规则 → T4.1 ADR-0009 (D1+D2+D3) → T4.2 CONTEXT 引用 ADR-0009 → sync → verify → git mv → archived
+last_event: next: Batch 3-4: T3.1 SKILL.md §5 list 行补 archived_count → T3.2 CONTEXT.md 补 layout 探测规则 → T4.1 ADR-0009 (D1+D2+D3) → T4.2 CONTEXT 引用 ADR-0009 → sync → verify → git mv → archived

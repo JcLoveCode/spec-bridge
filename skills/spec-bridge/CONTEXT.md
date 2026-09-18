@@ -98,6 +98,18 @@ agent 调用 `bridge mention --tag <t> --ref <change>` 记录"同类问题再次
 **复验异议（rebuttal）**：
 人工测试复验发现偏差时的自由文本记录，存于归档变更的 `rebuttals/` 目录；不自动开变更。
 
+**Layout 探测规则**（v1.4 修正）：
+`detectLayout(projectRoot)` 优先级——bridge 历史归档目录在哪 = layout 真信号：
+1. **`changes/archive/*/.bridge.yaml` 存在** → `standalone`（changesDir = `changes/`）
+2. **`openspec/changes/archive/*/.bridge.yaml` 存在** → `openspec`（changesDir = `openspec/changes/`）
+3. **`openspec/config.yaml` 存在**（OpenSpec CLI 标志）→ `openspec`
+4. 缺省 → `standalone`
+
+_避免_：只看 `openspec/` 目录存在（v1.4 之前的探测，会把 OpenSpec CLI 本地安装产物误判为 openspec 布局）。详见 ADR-0009。
+
+**`archived_count` 字段**（v1.4 新字段）：
+`bridge list <root>` 返回 JSON 多一段数字字段 `archived_count`，报告 archive 子目录下的归档 change 条数。只数不展示——详情走 `bridge pattern --tag <t>` / `bridge mention <dir> --tag <t>` / `bridge next changes/archive/<id>`。让 agent 知道"有 N 条历史可接续"，但不喧宾夺主。
+
 **会话（session）**：
 桥不拥有的概念——对话上下文连续性归 agent，桥只提供提及命令。
 _避免_：桥持久化会话状态。
@@ -112,3 +124,5 @@ _避免_：桥持久化会话状态。
 - **模式标签**跨**变更**聚类，与**因果链**正交；**提及**是模式标签的信号源
 - **复验异议**从属于已归档**变更**；是否升级为**续作**由人决定
 - **SDD 产物** vs **外部产物**：桥的内置 vs 外栈工具栈同一文件路径生成物；台账可同时管两边（`bridge adopt` 接管外部），但产物所有权不变
+- **Layout 探测规则**（v1.4）：bridge 历史归档目录在哪 = 真信号——优先级 1) `changes/archive/*/.bridge.yaml` 2) `openspec/changes/archive/*/.bridge.yaml` 3) `openspec/config.yaml` 4) 缺省 standalone。详见 ADR-0009
+- **`archived_count` 字段**（v1.4）：`bridge list` JSON 的数字字段，只数 archive 子目录不展示详情——让 agent 感知"有 N 条历史"但遵守 v1.2 D5 skip archive 设计
