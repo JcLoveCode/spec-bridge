@@ -145,3 +145,67 @@ v1.5 改动无回归。fail 是 v1.4 引入的 latent bug，记入 v1.5 已知�
 - T3.1 写 `scripts/cmd-archive-ready.mjs`（校验 4 条件：change-dir 有效 / 未 archived / 已 sync / specs/<cap>/why.md 全在）
 - T3.2 改 `scripts/bridge.mjs` dispatch + usage 加 `archive-ready`
 - T3.3 写 `tests/cmd-archive-ready.test.mjs`（4 case：全 PASS / 缺 why.md / 未 sync / 已 archived）
+
+---
+
+## Batch 3 — cmd-archive-ready 守门员
+
+### 任务完成
+
+- ✅ **T3.1** 写 `scripts/cmd-archive-ready.mjs`：default export `run(args, io)`，校验 4 条件
+  1. `.bridge.yaml` 存在
+  2. stage ≠ archived（write-protect，ADR-0005）
+  3. published=true + spec_publication_receipt 已写（已 sync）
+  4. 所有 `specs/<cap>/spec.md` 对应的 `specs/<cap>/why.md` 全在
+- ✅ **T3.2** 改 `scripts/bridge.mjs`：import `runArchiveReady` + dispatch 加 `if (command === 'archive-ready')` + usage 加行
+- ✅ **T3.3** 写 `tests/cmd-archive-ready.test.mjs`：6 case
+  - case 1: 全前置满足 → exit 0 PASS
+  - case 2: 缺 why.md → exit 1 + 提示 bridge distill
+  - case 3: 未 sync → exit 1 + 提示 bridge sync
+  - case 4: 已 archived → exit 1 + 提示 write-protect
+  - case 5: 缺 .bridge.yaml → exit 1
+  - case 6: 多 cap 任一缺 why.md → exit 1（指出哪个 cap 缺）
+- ✅ **修 case 5 实战 bug**：原实现用 `readState` try/catch，但 readState 在文件不存在时返回 BUILTIN_DEFAULTS 不抛错，走到了 "change not synced yet" 分支。修：先 `existsSync(.bridge.yaml)` 显式校验，再 readState。
+
+### TDD 闭环
+
+| 阶段 | cmd-archive-ready test |
+|---|---|
+| **RED**（初版） | 5/6 PASS（case 5 fail：readState 不抛 → 走到 synced 分支） |
+| **GREEN**（修后） | 6/6 PASS |
+
+### 实战 v1.5
+
+```bash
+$ node bridge.mjs archive-ready changes/v1-5-vendor-distill-guard
+FAIL: change not synced yet — run: bridge sync <change-dir>
+exit 1
+```
+
+D3 守门员**正确工作**：v1.5 当前 stage=executing + published=false → 拒绝 archive + 提示先跑 `bridge sync`。这正是设计意图——Batch N 流程的"第一步关卡"。
+
+### 全套回归
+
+```
+tests 96 / pass 95 / fail 1
+```
+
+**唯一 fail** 仍是 init-integration R1.5.1（v1.4 latent bug），与 v1.5 无关。
+
+### 验收证据
+
+- 新增：`skills/spec-bridge/scripts/cmd-archive-ready.mjs`（约 60 行）
+- 新增：`skills/spec-bridge/tests/cmd-archive-ready.test.mjs`（约 110 行，6 case）
+- 改动：`skills/spec-bridge/scripts/bridge.mjs`（3 处：import + usage + dispatch，共 +9 行）
+
+### 下一步
+
+进入 **Batch N — v1.5 归档流程**：
+- TN.1 `bridge sync changes/v1-5-vendor-distill-guard`（vendor 修后真 sync，写 receipt）
+- TN.2 `bridge verify changes/v1-5-vendor-distill-guard`（校验 receipt PASS）
+- TN.3 `bridge archive-ready changes/v1-5-vendor-distill-guard`（D3 守门员 PASS）
+- TN.4 `git mv changes/v1-5-vendor-distill-guard changes/archive/2026-09-18-v1-5-vendor-distill-guard/`
+- TN.5 `bridge state set ... stage archived`
+- TN.6 commit Batch N + （可选）push
+
+**预期风险**：TN.2 verify 应 PASS（v1.5 receipt 用新算法算，baseline 真实存在）；不重现 v1.4 偏差（v1.4 是历史 receipt 已废）。

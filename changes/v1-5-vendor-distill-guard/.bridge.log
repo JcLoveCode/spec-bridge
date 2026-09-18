@@ -7,3 +7,4 @@
 - 2026-09-18T10:28:14.115Z distill: why.md written to specs/archive-publish-guard/why.md (2 decisions)
 - 2026-09-18T10:50:26.512Z distill: why.md written to specs/archive-publish-guard/why.md (3 decisions)
 - 2026-09-18T10:51:24.930Z next: Batch 2 done: cmd-distill 子命令 (T2.1) + bridge.mjs dispatch 加 distill (T2.2) + 6 case 全 PASS (T2.3); 实战 bridge distill v1-5 真生成 why.md 含 D1+D2+D3; 全套 89/90 PASS (1 fail = v1.4 latent bug 与 v1.5 无关); 详 progress.md
+- 2026-09-18T10:53:13.834Z next: Batch 3 done: cmd-archive-ready 守门员子命令 (T3.1) + bridge.mjs dispatch 加 archive-ready (T3.2) + 6 case 全 PASS (T3.3); 实战 v1-5 正确拒绝 (未 sync); 全套 95/96 PASS; 详 progress.md

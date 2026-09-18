@@ -24,6 +24,7 @@ import { run as runPattern } from './cmd-pattern.mjs';
 import { run as runMention, runRootcause } from './cmd-mention.mjs';
 import { run as runRebuttal } from './cmd-rebuttal.mjs';
 import { run as runDistill } from './cmd-distill.mjs';
+import { run as runArchiveReady } from './cmd-archive-ready.mjs';
 import { readState, writeState, appendEvent, checkStageTransition } from './vendor/bridge-state.mjs';
 import { validatePublicationReceipt } from './vendor/spec-publication.mjs';
 
@@ -48,6 +49,7 @@ function usage(code = 2) {
     '  event <change-dir> <one-line event>',
     '  rebuttal <change-dir> <one-line objection>',
     '  distill <change-dir>                 distill design.md ## Decisions into specs/<cap>/why.md (v1.5 D2)',
+    '  archive-ready <change-dir>           archive gatekeeper: validate why.md + sync + not-archived (v1.5 D3)',
     '  hashes <change-dir> [--check]      artifact digests / contract staleness check',
     '  layout <project-root>              detect openspec vs standalone layout',
     '  list <project-root>                list active changes (skips archive/)',
@@ -215,6 +217,13 @@ async function main() {
     // v1.5 D2：从 design.md ## Decisions 蒸馏生成 specs/<cap>/why.md，
     // 配套 D3 Batch N 校验 why.md 存在。归档前必跑。
     const result = await runDistill(rest);
+    process.exit(result.exitCode ?? 0);
+  }
+
+  if (command === 'archive-ready') {
+    // v1.5 D3: archive 前置守门员 — 校验 why.md 全在 + 已 sync + 未 archived。
+    // 跑通后才允许进入 git mv + state set archived 流程（Batch N 后两步）。
+    const result = await runArchiveReady(rest);
     process.exit(result.exitCode ?? 0);
   }
 
