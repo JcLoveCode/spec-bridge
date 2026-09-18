@@ -1,0 +1,29 @@
+# .bridge.yaml — spec-bridge change state
+# Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
+
+# === Lifecycle ===
+stage: archived
+layout: standalone
+branch: v1.2-followup-b7
+
+# === Workflow (v1.2) ===
+workflow_kind: matt
+parent: 2026-09-18-v1-2-navigator-architect
+parent_artifacts_hash: sha256:1e3159da64f24de1c1809462e783436b2bddb86c73f64c62a2a5b5df5d3e05a5
+
+# === Capabilities (probed once per change) ===
+capabilities: matt
+tags: null
+
+# === Contract gate ===
+contract_approved: approved by JcLoveCode 2026-09-18 for v1-2-followup-b7-touchup (parent=v1.2, 2 reqs, 5 constraints, 2 batches, B7 protocol hardening)
+artifacts_hash: sha256:6d5732a434cce17b3d45d4381d78c938efa826e332d88776bf5898abd6a2f485
+contract_hash: sha256:ff519c971cd956e6d7c3df6689007fe44eac940bfa8a91e583231c16390c4813
+
+# === Publication receipt (written by vendored sync) ===
+published: true
+spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1Njo0M2UxZDVkMzllNWZhOGQzZTA5ZmNlNjhkMzFjNThiNzgyZDA1MzQ2NDExMTU0MTliZDQyZTFiOTBiOTNlMmFjIiwiYmFzZWxpbmVfYmVmb3JlX2hhc2giOiJzaGEyNTY6NDQ4NGFkMmFkMjdhYzFiNGVlNTgyNGMwZDY4ZmZkYTc4OWFkZDI1NDg4ZTlhNDg3MDIxZjRiZTk5ZTk3ZmE2NCIsImJhc2VsaW5lX2FmdGVyX2hhc2giOiJzaGEyNTY6MzIzYWNjNWU2YWZiZDcwMjQ4YmFjMjNkYmE0NjY3MWRhZDljMmJlMzIyY2I4ZjJjZTdiMzdkMGU1N2QzMTk2NyIsImNhcGFiaWxpdGllcyI6WyJjbGkiLCJ2MS0yLWZvbGxvd3VwLWI3LXRvdWNodXAiXX0
+
+# === Resume ===
+next: Batch 1 done: 4 tests green (3 stage-aware branches + 1 contract backward-compat); proceed Batch 2 (SKILL.md hard step + archive)
+last_event: stage: executing → archived

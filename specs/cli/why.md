@@ -102,3 +102,31 @@ spec-rev: sha256:fd27d4517923a9ff737f2ec9d5337bc090cb3d6bcdfb03d3643f02f460ff4bb
 结论：appendEvent 会连带刷新 .bridge.yaml 的 last_event——违反 R7"零状态变更"。改为直接 appendFileSync 写 .bridge.log。这个坑是测试咬出来的（B6 审查记录）：台账"日志追加"与"状态变更"是两个动作，appendEvent 混合了它们。
 溯源：[progress.md Batch 6](../../changes/archive/2026-09-18-v1-2-navigator-architect/progress.md)
 spec-rev: sha256:fd27d4517923a9ff737f2ec9d5337bc090cb3d6bcdfb03d3643f02f460ff4bbd
+
+## v1.2 follow-up B7（硬性步骤栏）的决策依据
+
+> 本节来自 follow-up `2026-09-18-v1-2-followup-b7-touchup`（parent = 2026-09-18-v1-2-navigator-architect，artifacts_hash sha256:1e3159...）。父 v1.2 自身执行期（B1→B8）每批开头没调 `bridge next`，且 stage 从批准门全程停在 `contracted`，跳过了 `executing` 拍——B7 专修这一缺口。
+
+### 为什么把"每批前 bridge next"与"进入 executing 必须 state set"升级为硬性步骤？
+
+结论：v1.2 自己证明了"软建议"在长执行期会失守——AI 按记忆推进会跳过 stage 转换、跳过 next 自证。SKILL.md §3 的硬性步骤栏用 markdown 引用块（`> **hard step — ...**`）明示两条命令（entering executing + before each batch），让下次跑 v1.3 时导航员真上岗。约束靠文档明示 + 命令文案提示（v1.2 follow-up B7 不做主动 hook，属 v1.3）。
+溯源：[design.md D1](../../changes/archive/2026-09-18-v1-2-followup-b7-touchup/design.md)（ADR-0004 补足）
+spec-rev: sha256:43e1d5d39e5fa8d3e09fce68d31c58b782d0534641115419bd42e1b90b93e2ac
+
+### 为什么 next 命令的 stage-aware 扩展要按 contract_approved 二态分流？
+
+结论：contracted 拍点原本是单 advice（"先 hashes --check"），但批准门过 / 未过应有不同引导。已 approved 时切到"proceed to executing — state set stage executing"，未 approved 保持旧 advice（向后兼容 v1.2 B3 既有测试）。stage-aware 用 effectiveStage key 查表，避免污染既有 stage 字面量。executing + next 字段形如 `Batch N:` 时末尾追加显式 `→ Batch N`，让 AI 一眼看出当前批次号。
+溯源：[design.md D2](../../changes/archive/2026-09-18-v1-2-followup-b7-touchup/design.md)
+spec-rev: sha256:43e1d5d39e5fa8d3e09fce68d31c58b782d0534641115419bd42e1b90b93e2ac
+
+### 为什么 follow-up 自检的硬性步骤要写在 progress.md + 用 bridge next 自证？
+
+结论：B7 的"硬性步骤"若只是文档声明就成了软文。follow-up 自身在批末（state next 之后）跑 `bridge next` 截图式记录到 progress.md——这本身就是 SKILL.md §3 的自证。"protocol executes the protocol"是消除"建议被忽略"风险的唯一办法。设计 D3 提的"测试三层覆盖"中协议自证一层只在 follow-up 流程内能跑（纯文档测试覆盖不到）。
+溯源：[design.md D3](../../changes/archive/2026-09-18-v1-2-followup-b7-touchup/design.md)
+spec-rev: sha256:43e1d5d39e5fa8d3e09fce68d31c58b782d0534641115419bd42e1b90b93e2ac
+
+### 为什么 SKILL.md §3 hard step 块放在 executing 段顶部而不是 §3 开头？
+
+结论：硬性步骤本质是"进入执行期的协议"，与"执行期本身做什么"是同一上下文。放在 executing 段顶部让 AI 读完 planning → contracted → 进入 executing 时立刻遇到 hard step；放在 §3 顶部会让 planning 阶段就出现"state set stage executing"显得割裂。段落内引用块（`> **hard step — ...**`）与正文列表分开排版——可读性 + 不被普通段落列表掩盖。
+溯源：[design.md D4](../../changes/archive/2026-09-18-v1-2-followup-b7-touchup/design.md)
+spec-rev: sha256:43e1d5d39e5fa8d3e09fce68d31c58b782d0534641115419bd42e1b90b93e2ac

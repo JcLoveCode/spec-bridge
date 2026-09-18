@@ -19,6 +19,8 @@ description: Single-entry workflow router that bridges user-installed OpenSpec (
 本 skill 目录下的 `scripts/bridge.mjs` 是唯一确定性入口（下文所有命令里的 `<bridge>` 指它的绝对路径，
 即本 SKILL.md 所在目录拼 `scripts/bridge.mjs`）。Node ≥ 20。
 
+**查命令**：`node <bridge>` 无参数 = dump 全部 13 条命令清单（最快查用法，不依赖 IDE 显示）。
+
 ## 1. 入口例程（每次触发先走这五步，不许跳过）
 
 ```
@@ -100,6 +102,14 @@ node <bridge> state next <change-dir> "已批准契约，待执行"
 未批准不执行，无例外。
 
 ### executing → 按 [references/executor-protocol.md](./references/executor-protocol.md) 执行
+
+> **hard step — entering executing**（不许跳过）
+> 批准门过 → 立刻 `state set <dir> stage executing`，否则 `bridge next` 永远停在 contracted，无法感知批进度。
+> 自证：`bridge next <dir>` 输出 `stage: executing`。
+
+> **hard step — before each batch**（不许跳过）
+> 每批开工前先 `bridge next <dir>` —— 看 stage / next / advised / Batch N（执行中追加）四行确认当前拍点；不一致时停下核对。
+> 批末：`state next <dir> "<下批一句话>"`（next 字段以 `Batch N:` 起头会自动触发末尾追加 `→ Batch N`），再调一次 `bridge next` 留痕。
 
 - 执行器选择（按能力快照）：superpowers TDD/SDD 纪律层（契约作输入锚点）→
   matt `spec-executor` + `tdd`/`code-review` → 内置协议 + 派发子代理（implementer-prompt 模板）。

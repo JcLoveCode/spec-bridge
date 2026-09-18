@@ -105,3 +105,72 @@ test('R2 加强：parent 与 workflow_kind 在导航输出中可见', () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+// v1.2 follow-up B7 / R1 场景 1：contracted + approved → advice 含 "proceed to executing"
+test('R1 场景 1：contracted + approved 提示进 executing', () => {
+  const root = makeSandbox();
+  try {
+    assert.equal(bridge(['init', 'demo'], root).status, 0);
+    assert.equal(bridge(['state', 'set', 'changes/demo', 'stage', 'contracted'], root).status, 0);
+    assert.equal(bridge(['state', 'set', 'changes/demo', 'contract_approved', 'approver 2026-09-18 note'], root).status, 0);
+    const result = bridge(['next', 'changes/demo'], root);
+    assert.equal(result.status, 0, `stderr: ${result.stderr}`);
+    assert.match(result.stdout, /^stage:\s+contracted$/m);
+    assert.match(result.stdout, /proceed to executing/);
+    assert.match(result.stdout, /state set.*stage executing/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// v1.2 follow-up B7 / R1 场景 2：executing + next 是 Batch 格式 → 末尾追加 "→ Batch N"
+test('R1 场景 2：executing + Batch N next 字段末尾追加显式编号', () => {
+  const root = makeSandbox();
+  try {
+    assert.equal(bridge(['init', 'demo'], root).status, 0);
+    assert.equal(bridge(['state', 'set', 'changes/demo', 'stage', 'executing'], root).status, 0);
+    assert.equal(bridge(['state', 'next', 'changes/demo', 'Batch 3: 改 cmd-next stage-aware'], root).status, 0);
+    const result = bridge(['next', 'changes/demo'], root);
+    assert.equal(result.status, 0, `stderr: ${result.stderr}`);
+    assert.match(result.stdout, /^stage:\s+executing$/m);
+    assert.match(result.stdout, /^→ Batch 3$/m);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// v1.2 follow-up B7 / R1 场景 3：归档态守门 (archived advice 含 ADR-0005 + follow-up + 勿改原版)
+test('R1 场景 3：archived 守门同时满足新 spec 与旧测试', () => {
+  const root = makeSandbox();
+  try {
+    assert.equal(bridge(['init', 'demo'], root).status, 0);
+    assert.equal(bridge(['state', 'set', 'changes/demo', 'stage', 'archived'], root).status, 0);
+    const result = bridge(['next', 'changes/demo'], root);
+    assert.match(result.stdout, /ADR-0005/);
+    assert.match(result.stdout, /follow-up/);
+    assert.match(result.stdout, /init <name> --parent/);
+    assert.match(result.stdout, /勿改原版/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// v1.2 follow-up B7 / R1 场景 4：patching 含 patching bypass + ADR-0005 + verify parent still archived
+test('R1 场景 4：patching 提示含 patching bypass + ADR-0005', () => {
+  const root = makeSandbox();
+  try {
+    assert.equal(bridge(['init', 'parent-change'], root).status, 0);
+    assert.equal(bridge(['state', 'set', 'changes/parent-change', 'artifacts_hash', 'sha256:ff11'], root).status, 0);
+    assert.equal(bridge(['state', 'set', 'changes/parent-change', 'stage', 'archived'], root).status, 0);
+    assert.equal(bridge(['init', 'patch-child', '--parent', 'parent-change'], root).status, 0);
+    assert.equal(bridge(['state', 'set', 'changes/patch-child', 'stage', 'patching'], root).status, 0);
+    const result = bridge(['next', 'changes/patch-child'], root);
+    assert.equal(result.status, 0, `stderr: ${result.stderr}`);
+    assert.match(result.stdout, /patching bypass/);
+    assert.match(result.stdout, /verify parent still archived/);
+    assert.match(result.stdout, /ADR-0005/);
+    assert.match(result.stdout, /续作/);  // 旧 v1.2 B3 测试 regex 兼容
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
