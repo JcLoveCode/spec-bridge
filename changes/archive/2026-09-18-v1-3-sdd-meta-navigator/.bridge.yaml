@@ -26,4 +26,4 @@ spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1NjozM2YyZm
 
 # === Resume ===
 next: Batch N: TN.1 sync → TN.2 verify → TN.3 why.md → TN.4 git mv → TN.5 state archived → TN.6 push
-last_event: stage: executing → archived
+last_event: Batch N complete: synced + verified + why.md distilled + git mv to archive + state archived + commit 875cfdb + pushed origin/v1.2
