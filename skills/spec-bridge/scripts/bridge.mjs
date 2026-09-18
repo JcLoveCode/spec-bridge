@@ -23,6 +23,7 @@ import { run as runNext } from './cmd-next.mjs';
 import { run as runPattern } from './cmd-pattern.mjs';
 import { run as runMention, runRootcause } from './cmd-mention.mjs';
 import { run as runRebuttal } from './cmd-rebuttal.mjs';
+import { run as runDistill } from './cmd-distill.mjs';
 import { readState, writeState, appendEvent, checkStageTransition } from './vendor/bridge-state.mjs';
 import { validatePublicationReceipt } from './vendor/spec-publication.mjs';
 
@@ -46,6 +47,7 @@ function usage(code = 2) {
     '  state next <change-dir> <one-line resume hint>',
     '  event <change-dir> <one-line event>',
     '  rebuttal <change-dir> <one-line objection>',
+    '  distill <change-dir>                 distill design.md ## Decisions into specs/<cap>/why.md (v1.5 D2)',
     '  hashes <change-dir> [--check]      artifact digests / contract staleness check',
     '  layout <project-root>              detect openspec vs standalone layout',
     '  list <project-root>                list active changes (skips archive/)',
@@ -206,6 +208,13 @@ async function main() {
 
   if (command === 'rebuttal') {
     const result = await runRebuttal(rest);
+    process.exit(result.exitCode ?? 0);
+  }
+
+  if (command === 'distill') {
+    // v1.5 D2：从 design.md ## Decisions 蒸馏生成 specs/<cap>/why.md，
+    // 配套 D3 Batch N 校验 why.md 存在。归档前必跑。
+    const result = await runDistill(rest);
     process.exit(result.exitCode ?? 0);
   }
 

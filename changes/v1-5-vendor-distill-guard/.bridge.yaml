@@ -25,5 +25,5 @@ published: false
 spec_publication_receipt: null
 
 # === Resume ===
-next: Batch 1 done: vendor resolvePublicationContext while 循环 (T1.1) + tests 3/3 GREEN (T1.2); 新发现 v1.4 verify FAIL 是 receipt 已废副作用而非 vendor bug 未修, 详 progress.md
-last_event: next: Batch 1 done: vendor resolvePublicationContext while 循环 (T1.1) + tests 3/3 GREEN (T1.2); 新发现 v1.4 verify FAIL 是 receipt 已废副作用而非 vendor bug 未修, 详 progress.md
+next: Batch 2 done: cmd-distill 子命令 (T2.1) + bridge.mjs dispatch 加 distill (T2.2) + 6 case 全 PASS (T2.3); 实战 bridge distill v1-5 真生成 why.md 含 D1+D2+D3; 全套 89/90 PASS (1 fail = v1.4 latent bug 与 v1.5 无关); 详 progress.md
+last_event: next: Batch 2 done: cmd-distill 子命令 (T2.1) + bridge.mjs dispatch 加 distill (T2.2) + 6 case 全 PASS (T2.3); 实战 bridge distill v1-5 真生成 why.md 含 D1+D2+D3; 全套 89/90 PASS (1 fail = v1.4 latent bug 与 v1.5 无关); 详 progress.md

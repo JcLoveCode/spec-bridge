@@ -58,3 +58,90 @@ v1.4 archive 已 `stage: archived`（write-protect，ADR-0005），不能改 .br
 - T2.1 写 `scripts/cmd-distill.mjs`
 - T2.2 改 `scripts/bridge.mjs` dispatch 加 `distill` 入口
 - T2.3 写 `tests/cmd-distill.test.mjs`
+
+---
+
+## Batch 2 — cmd-distill 子命令 + 实战 v1.5 why.md
+
+### 任务完成
+
+- ✅ **T2.1** 写 `scripts/cmd-distill.mjs`：default export `run(args, io)`，从 design.md ## Decisions 蒸馏生成 specs/<cap>/why.md
+  - 解析 ## Purpose 段 → Conclusion
+  - 跨段抽取所有 `### D\d+ — <name>`（修 v1.5 实战 bug：原按段边界截断，Out-of-scope 子段后 D3 会被丢）
+  - `extractFirstValue(body, key)` 取下一条非空行的非 bullet 内容（修 v1.5 实战 bug：原 regex 跳空行匹配到 bullet 第一行）
+  - 校验：why.md 拒绝覆盖 / design.md 必存在 / 至少一条 D / change-dir 必是有效 bridge change
+- ✅ **T2.2** 改 `scripts/bridge.mjs`：import `runDistill` + dispatch 加 `if (command === 'distill')` + usage 加 `distill <change-dir>` 行
+- ✅ **T2.3** 写 `tests/cmd-distill.test.mjs`：6 case
+  - case 1: design.md 有 D1+D2 → 生成 why.md 含 Conclusion + Source-of-truth + 2 条 D + spec-rev
+  - case 2: 缺 ## Decisions 段 → exit 1
+  - case 3: why.md 已存在 → exit 1 + 拒绝覆盖
+  - case 4: design.md 不存在 → exit 1
+  - case 5: 缺 .bridge.yaml → exit 1
+  - case 6 (实战场景): design.md 在 ## Decisions 后接 ## Out-of-scope decisions 子段 → D1+D2+D3 全抽到
+
+### TDD 闭环
+
+| 阶段 | cmd-distill test |
+|---|---|
+| **RED** 预期 | fail（impl 不存在） |
+| **GREEN 修后** | 6/6 PASS |
+
+### 实战
+
+```bash
+$ node bridge.mjs distill changes/v1-5-vendor-distill-guard
+distilled: changes/v1-5-vendor-distill-guard/specs/archive-publish-guard/why.md
+  3 decisions extracted from design.md
+```
+
+why.md 实战生成内容：
+- `# Why: v1-5-vendor-distill-guard`
+- `## Conclusion`：从 design.md ## Purpose 取第一段（"堵住 v1.4 归档时暴露的两个口子..."）
+- `## Source-of-truth` + D1+D2+D3 三条决策（每条 = 来源 + 理由取自 design.md **决定**/**理由**：）
+- `## spec-rev` 占位（待 sync 盖 hash）
+- `## Non-Decisions` + `## Open Questions` 占位
+
+### 完成定义 vs 实际
+
+**tasks.md Batch 2 完成定义**：
+> `bridge distill <change-dir>` 可独立调用，从 design.md ## Decisions 蒸馏生成 specs/<cap>/why.md；why.md 含 Conclusion + Source-of-truth + spec-rev 占位
+
+**实际**：✅ 严格达成。why.md 含上述三段 + 决策列表 + 占位段。
+
+### 全套回归
+
+```
+tests 90 / pass 89 / fail 1
+```
+
+**唯一 fail**：`init-integration.test.mjs:53 R1 场景 1.5 — 探测 openspec layout（openspec/ 在场 → openspec/changes/）`
+
+**根因诊断**：
+- v1.4 commit `3398bab` 改 `detectLayout` 优先级（archive 化石 > openspec/config.yaml > 缺省 standalone）
+- 但 init-integration test fixture 是临时目录 `<root>/openspec/`（无 archive 化石、无 openspec/config.yaml）
+- 按 v1.4 新逻辑 → fall through 到 standalone → change 落 `changes/demo/` 而非 `openspec/changes/demo/`
+- **v1.4 latent bug**（test 期望与 v1.4 detectLayout 优先级不一致）
+
+**验证 v1.5 无关**：
+```bash
+$ git stash  # 暂存 v1.5 改动
+$ node --test tests/init-integration.test.mjs
+tests 8 / pass 7 / fail 1   # 仍 fail 同一 case
+$ git stash pop  # 恢复 v1.5 改动
+```
+
+v1.5 改动无回归。fail 是 v1.4 引入的 latent bug，记入 v1.5 已知遗留（与 vendor / distill scope 无关，**v1.5 不修**）。
+
+### 验收证据
+
+- 新增：`skills/spec-bridge/scripts/cmd-distill.mjs`（约 100 行）
+- 新增：`skills/spec-bridge/tests/cmd-distill.test.mjs`（约 130 行，6 case）
+- 改动：`skills/spec-bridge/scripts/bridge.mjs`（3 处：import + usage + dispatch，共 +9 行）
+- why.md：`changes/v1-5-vendor-distill-guard/specs/archive-publish-guard/why.md`（38 行）
+
+### 下一步
+
+进入 **Batch 3**（cmd-archive-ready.mjs 守门员子命令 + bridge.mjs dispatch + tests）：
+- T3.1 写 `scripts/cmd-archive-ready.mjs`（校验 4 条件：change-dir 有效 / 未 archived / 已 sync / specs/<cap>/why.md 全在）
+- T3.2 改 `scripts/bridge.mjs` dispatch + usage 加 `archive-ready`
+- T3.3 写 `tests/cmd-archive-ready.test.mjs`（4 case：全 PASS / 缺 why.md / 未 sync / 已 archived）
