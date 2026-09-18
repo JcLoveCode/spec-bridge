@@ -7,3 +7,4 @@
 - 2026-09-18T08:50:04.171Z next: Batch 4: T4.1 SKILL.md 加 §6 跨协议路由 → T4.2 CONTEXT.md 升级能力阶梯 v2 (D5+D8) → T4.3 写 ADR-0008 (wayfinder 档位语义) → T4.4 写 docs-sync-test 自证 B1+B2+B3 文档与代码一致
 - 2026-09-18T09:06:23.615Z next: Batch N: TN.1 sync → TN.2 verify → TN.3 why.md → TN.4 git mv → TN.5 state archived → TN.6 push
 - 2026-09-18T09:10:59.940Z stage: executing → archived
+- 2026-09-18T09:11:56.943Z Batch N complete: synced + verified + why.md distilled + git mv to archive + state archived + commit 875cfdb + pushed origin/v1.2
