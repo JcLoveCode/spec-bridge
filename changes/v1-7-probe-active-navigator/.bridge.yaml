@@ -1,0 +1,29 @@
+# .bridge.yaml — spec-bridge change state
+# Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
+
+# === Lifecycle ===
+stage: contracted
+layout: standalone
+branch: null
+
+# === Workflow (v1.2) ===
+workflow_kind: builtin
+parent: 2026-09-20-v1-6-init-detectlayout-fix
+parent_artifacts_hash: sha256:883967001f45fb41f18f7057018d2c08a5208db3f57ae5012538797ea98bc4a2
+
+# === Capabilities (probed once per change) ===
+capabilities: null
+tags: null
+
+# === Contract gate ===
+contract_approved: true
+artifacts_hash: sha256:5c0bd62b224fbd69ba04d774ce934c5edb336c4a33bc750313647b275881dd04
+contract_hash: sha256:2903872b0d5d35fa4c037a9c6b033914c06386162dcc2cb45305bca81b5385f9
+
+# === Publication receipt (written by vendored sync) ===
+published: false
+spec_publication_receipt: null
+
+# === Resume ===
+next: edit proposal/design/tasks/spec — when stable, write execution-contract.md and advance to contracted
+last_event: stage: planning → contracted
