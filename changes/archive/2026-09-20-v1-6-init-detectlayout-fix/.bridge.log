@@ -1,0 +1,8 @@
+- 2026-09-20T02:36:47.345Z init: scaffolded v1-6-init-detectlayout-fix (layout=standalone, workflow=builtin, capabilities=unset, parent=2026-09-18-v1-5-vendor-distill-guard)
+- 2026-09-20T02:39:43.110Z stage: planning → contracted
+- 2026-09-20T02:39:43.232Z stage: contracted → executing
+- 2026-09-20T02:39:43.425Z next: Batch 1 ready: RED R1.5.1 + case A+B → T1.1 write tests → T1.2/T1.3 detectLayout fix → GREEN
+- 2026-09-20T02:42:51.853Z next: Batch 1 done: detectLayout 加 openspec/ 弱信号 (T1.2/T1.3) + init-integration 10/10 GREEN (T1.1/T1.4) + ADR-0009 v1.6 附录 (T1.5) + R6 hardcode 5→7 顺手修; 全套 98/98 PASS; 详 progress.md
+- 2026-09-20T02:43:15.497Z distill: why.md written to specs/v1-6-init-detectlayout-fix/why.md (3 decisions)
+- 2026-09-20T02:43:42.829Z stage: executing → archived
+- 2026-09-20T02:43:42.935Z Batch N complete: detectLayout 加 openspec/ 弱信号 (R1) + mirror 一致 (R2) + spec-bridge 仓库根 list standalone (R3) + init-integration 10/10 + 全套 98/98 + R6 hardcode 5→7 顺手修 + sync/verify/distill/archive-ready 实战绿

@@ -107,6 +107,31 @@ v1.3 `.bridge.yaml` 里 `parent: 2026-09-18-v1-3-research-xrouter` 是 ADR-0005 
 - 设计决策落地：`changes/v1-4-list-archive-visibility/design.md ## D1` 等
 - 实现：`skills/spec-bridge/scripts/bridge.mjs` `detectLayout()` + `listChanges()`
 - 同步：`skills/spec-bridge/scripts/cmd-init.mjs` mirror `detectLayout()`
+
+---
+
+## v1.6 附录：加 openspec/ 目录在场弱信号兜底
+
+**修订日期**：2026-09-20
+**修订原因**：v1.4 改 detectLayout 优先级后，`spec/cli/spec.md R1 场景 1.5`（"项目根含 `openspec/` 子目录 → openspec layout"）对应的集成测试 `tests/init-integration.test.mjs:53 R1 场景 1.5` 持续 FAIL。spec 是 source-of-truth，实现违反 spec。
+
+**修订内容**：在优先级链尾部（`config.yaml` 之后、`缺省 standalone` 之前）加第 4 条弱信号：
+
+```text
+4. <root>/openspec/ 目录在场 → layout: openspec  ← v1.6 新加弱信号
+```
+
+**安全性论证**：v1.4 关心的 spec-bridge 仓库根有 `openspec/`（OpenSpec CLI 本地安装）误判场景，因仓库根 `changes/archive/` 在场，**优先级 1 命中 → standalone**，**根本走不到第 4 条弱信号**——弱信号不会误伤 spec-bridge 仓库。
+
+**测试**：
+- `tests/init-integration.test.mjs` R1 场景 1.5 — RED→GREEN（v1.6 改 detectLayout 前 FAIL，改后 PASS）
+- `tests/init-integration.test.mjs` R1 场景 1.6（v1.6 新加）— 验证 archive 化石在场压制 openspec/ 弱信号（PASS 保持）
+- `tests/init-integration.test.mjs` R1 场景 1.7（v1.6 新加）— mock spec-bridge 仓库根 list → standalone + archived_count: 5（PASS 保持）
+
+**落地**：
+- `changes/v1-6-init-detectlayout-fix/proposal.md`
+- `changes/v1-6-init-detectlayout-fix/design.md`
+- `changes/v1-6-init-detectlayout-fix/specs/v1-6-init-detectlayout-fix/spec.md`
 - 测试：`skills/spec-bridge/tests/docs-sync-test.mjs` R6（archived_count 字段存在）+ R7（mirror 一致）
 - 文档：`SKILL.md` §5 list 行 + `CONTEXT.md` Layout 探测规则段
 - 父决策：ADR-0005（follow-up 链）/ ADR-0008（bridge as cross-protocol recommender）

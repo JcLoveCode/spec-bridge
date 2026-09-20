@@ -105,7 +105,9 @@ function detectLayout(projectRoot) {
   // 修正（v1.3 Batch N 补丁）：原探测只看 `openspec/` 目录存在——会把 OpenSpec CLI 本地安装
   // （磁盘有、gitignored）误判为 openspec 布局，让 list 走 `openspec/changes/` 看不见 `changes/archive/` 历史。
   // 新信号：bridge 历史归档目录在哪 = layout 真信号。
-  // 优先级：archive 历史化石 > openspec/config.yaml (OpenSpec CLI 标志) > 缺省 standalone。
+  // 优先级：archive 历史化石 > openspec/config.yaml (OpenSpec CLI 标志) > openspec/ 目录在场 (v1.6 弱信号兜底) > 缺省 standalone。
+  // v1.6 加 openspec/ 弱信号：spec/cli/spec.md R1 场景 1.5 要求"项目根含 openspec/ → openspec layout"，
+  // 但 archive 化石优先级 1 保护 spec-bridge 仓库根（changes/archive/* 在场时根本不走到弱信号）。
   const bridgeArchive = join(root, 'changes', 'archive');
   const openspecArchive = join(root, 'openspec', 'changes', 'archive');
   if (existsSync(bridgeArchive) && hasAnyBridgeYaml(bridgeArchive)) {
@@ -115,6 +117,9 @@ function detectLayout(projectRoot) {
     return { layout: 'openspec', changesDir: join(root, 'openspec', 'changes'), baselineDir: join(root, 'openspec', 'specs') };
   }
   if (existsSync(join(root, 'openspec', 'config.yaml'))) {
+    return { layout: 'openspec', changesDir: join(root, 'openspec', 'changes'), baselineDir: join(root, 'openspec', 'specs') };
+  }
+  if (existsSync(join(root, 'openspec'))) {
     return { layout: 'openspec', changesDir: join(root, 'openspec', 'changes'), baselineDir: join(root, 'openspec', 'specs') };
   }
   return { layout: 'standalone', changesDir: join(root, 'changes'), baselineDir: join(root, 'specs') };

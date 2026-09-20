@@ -64,6 +64,48 @@ test('R1 场景 1.5：探测 openspec layout（openspec/ 在场 → openspec/cha
   }
 });
 
+// v1.6 R1：archive 化石在场压制 openspec/ 弱信号 — 模拟 v1.4 ADR-0009 防误判场景。
+// openspec/ 目录在场（OpenSpec CLI 本地安装）+ changes/archive 化石在场（spec-bridge 仓库根）
+// → layout: standalone（化石优先级 1 保护），不能被 openspec/ 弱信号误判。
+test('R1 场景 1.6（v1.6）：archive 化石在场 + openspec/ 目录同时在场 → standalone（防 v1.4 误判）', () => {
+  const root = makeSandbox(true);
+  try {
+    mkdirSync(join(root, 'openspec'), { recursive: true });
+    const fakeArchiveId = '2026-09-18-fake-archive';
+    mkdirSync(join(root, 'changes', 'archive', fakeArchiveId), { recursive: true });
+    writeFileSync(join(root, 'changes', 'archive', fakeArchiveId, '.bridge.yaml'), 'stage: archived\n', 'utf-8');
+    const result = bridge(['init', 'demo'], root);
+    assert.equal(result.status, 0, `stderr: ${result.stderr}`);
+    const stateFile = join(root, 'changes', 'demo', '.bridge.yaml');
+    assert.ok(existsSync(stateFile), '化石在场时 change 应落 changes/ 下（standalone），不被 openspec/ 弱信号误判');
+    assert.match(readFileSync(stateFile, 'utf-8'), /layout: standalone/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// v1.6 R3：spec-bridge 仓库根 list 端到端回归 — 模拟真实 spec-bridge 仓库布局
+// （openspec/ + changes/archive/ 有 5 个化石）跑 bridge list 应返回 standalone + archived_count: 5。
+// 这测的是 v1.4 修复成果未被 v1.6 弱信号破坏。
+test('R1 场景 1.7（v1.6）：mock spec-bridge 仓库根 list → standalone + archived_count: 5', () => {
+  const root = makeSandbox(true);
+  try {
+    mkdirSync(join(root, 'openspec'), { recursive: true });
+    for (let i = 1; i <= 5; i += 1) {
+      const archiveId = `2026-09-18-fake-archive-${i}`;
+      mkdirSync(join(root, 'changes', 'archive', archiveId), { recursive: true });
+      writeFileSync(join(root, 'changes', 'archive', archiveId, '.bridge.yaml'), 'stage: archived\n', 'utf-8');
+    }
+    const result = bridge(['list', root], root);
+    assert.equal(result.status, 0, `stderr: ${result.stderr}`);
+    const listing = JSON.parse(result.stdout);
+    assert.equal(listing.layout, 'standalone', 'v1.4 修复成果：化石在场时 layout 应为 standalone');
+    assert.equal(listing.archived_count, 5, 'archived_count 应正确数出 5 个化石');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('R2：init 不写 hash / 回执字段（hash 与回执属 contracted→archived 阶段）', () => {
   const root = makeSandbox(true);
   try {

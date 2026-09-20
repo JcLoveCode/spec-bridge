@@ -215,6 +215,9 @@ export function detectLayout(projectRoot) {
   if (existsSync(join(projectRoot, 'openspec', 'config.yaml'))) {
     return { layout: 'openspec', changesDir: join(projectRoot, 'openspec', 'changes') };
   }
+  if (existsSync(join(projectRoot, 'openspec'))) {
+    return { layout: 'openspec', changesDir: join(projectRoot, 'openspec', 'changes') };
+  }
   return { layout: 'standalone', changesDir: join(projectRoot, 'changes') };
 }
 

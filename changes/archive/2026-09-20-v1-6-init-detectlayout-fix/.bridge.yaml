@@ -1,0 +1,29 @@
+# .bridge.yaml — spec-bridge change state
+# Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
+
+# === Lifecycle ===
+stage: archived
+layout: standalone
+branch: null
+
+# === Workflow (v1.2) ===
+workflow_kind: builtin
+parent: 2026-09-18-v1-5-vendor-distill-guard
+parent_artifacts_hash: sha256:a3d190454e5cf4bbead5cd6af3e86b624e9802e3555dd6c84dee0331420799b8
+
+# === Capabilities (probed once per change) ===
+capabilities: null
+tags: null
+
+# === Contract gate ===
+contract_approved: v1.6 planning approved: R1+R2+R3 + D1+D2+D3 + C1+C2+C3 consistent; ready for executing (TDD batch)
+artifacts_hash: sha256:883967001f45fb41f18f7057018d2c08a5208db3f57ae5012538797ea98bc4a2
+contract_hash: sha256:75d1258ef726664eaecabee61fecb10302502b400f09beeb9052d8e7095c8c7f
+
+# === Publication receipt (written by vendored sync) ===
+published: true
+spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1Njo1ODA0NzZjODIyNjg5NWNlZTczODFkOGY4ZmM5MjIwZjBhNzQ4YWY0NGM2OGEyZjgyZWFhNDhmMDljYjRmNWM4IiwiYmFzZWxpbmVfYmVmb3JlX2hhc2giOiJzaGEyNTY6NDY2OTE2M2M1NDc1OTlhYWEwMDc4YzUyYTJlMjljYTM4ZmY2YTRlMTUzNjdlYWY0OGI4MzU5ZWRlOWRlOGI0NCIsImJhc2VsaW5lX2FmdGVyX2hhc2giOiJzaGEyNTY6MTlhYjU3MmY1MmY5MzZmMGY1MmM0NDNmNDZkMTI5ZTJlOWIzMTM0MzQ4Mjk2MjIyMmE4MDkzNmMxMmVkM2Q4YiIsImNhcGFiaWxpdGllcyI6WyJ2MS02LWluaXQtZGV0ZWN0bGF5b3V0LWZpeCJdfQ
+
+# === Resume ===
+next: Batch 1 done: detectLayout 加 openspec/ 弱信号 (T1.2/T1.3) + init-integration 10/10 GREEN (T1.1/T1.4) + ADR-0009 v1.6 附录 (T1.5) + R6 hardcode 5→7 顺手修; 全套 98/98 PASS; 详 progress.md
+last_event: Batch N complete: detectLayout 加 openspec/ 弱信号 (R1) + mirror 一致 (R2) + spec-bridge 仓库根 list standalone (R3) + init-integration 10/10 + 全套 98/98 + R6 hardcode 5→7 顺手修 + sync/verify/distill/archive-ready 实战绿
