@@ -29,6 +29,7 @@ import { run as runArchiveReady } from './cmd-archive-ready.mjs';
 import { run as runMemory } from './cmd-memory.mjs';
 import { readState, writeState, appendEvent, checkStageTransition } from './vendor/bridge-state.mjs';
 import { validatePublicationReceipt } from './vendor/spec-publication.mjs';
+import { execFileSync } from 'node:child_process';
 
 const ARTIFACTS = ['proposal.md', 'design.md', 'tasks.md'];
 
@@ -338,6 +339,25 @@ async function main() {
       }
       writeState(changeDir, { ...state, [field]: value });
       if (field === 'stage') appendEvent(changeDir, `stage: ${state.stage} → ${value}`);
+      // v1.8-3 (ADR-0013 / R6)：stage → archived 触发团队层 memory sync（CLI 算 hash 校验）。
+      // spec R6 修订：trigger 是 state set stage archived（因 bridge archive 子命令不存在；archive 流程是手工 3 步）。
+      // 失败不回滚 state：用户手动重试 `bridge memory sync <dir>`。
+      if (field === 'stage' && value === 'archived' && state.stage !== 'archived') {
+        try {
+          const syncResult = execFileSync(
+            process.execPath,
+            [join(import.meta.dirname, 'cmd-memory.mjs'), 'sync', changeDir],
+            { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' }
+          );
+          if (syncResult) process.stdout.write(syncResult);
+          appendEvent(changeDir, 'memory sync completed');
+        } catch (syncErr) {
+          const msg = syncErr && syncErr.stderr ? syncErr.stderr.toString().trim() : String(syncErr.message || syncErr);
+          console.error(`[warn] memory sync failed; team cap not updated — ${msg}`);
+          console.error(`[hint] retry later: bridge memory sync ${changeDir}`);
+          appendEvent(changeDir, `memory sync FAILED: ${msg.split('\n')[0].slice(0, 80)}`);
+        }
+      }
       console.log(`${field} updated`);
       process.exit(0);
     }

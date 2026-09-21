@@ -39,6 +39,12 @@ function makeFixture(opts = {}) {
   if (opts.whyExists !== false) {
     writeFileSync(join(changeDir, 'specs', 'fixture-cap', 'why.md'), '# Why\n');
   }
+  // v1.8-3 (ADR-0013 / R5)：archive-ready 需要个人 memory 守门通过。原 makeFixture 不写 personal memory，
+  // 现在自动补一份含 §1 决策行的 memory.md（除非 opts.noPersonalMemory=true）。
+  if (!opts.noPersonalMemory) {
+    writeFileSync(join(changeDir, 'memory.md'),
+      '# Personal\n\n## §1 decisions\n\nv1.0: 砍 X 因为 Y\n\n## §2 obstacles\n\n(placeholder)\n');
+  }
   return { root, changeDir };
 }
 
