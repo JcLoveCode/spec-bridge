@@ -219,6 +219,34 @@ bridge 只填 memory 骨架结构和元信息（`generated_by`），**不替 AI 
 
 ## 5. 命令速查
 
+### 5.6 命令面板（v1.9-1 / ADR-0014）
+
+```bash
+# 查询/设置 bridge 强度级别
+bridge mode
+# 输出：Current mode: full / Source: default
+
+bridge mode <preset>    # preset ∈ {full, memory, navigator, off}
+
+# 管理能力栈配置（手动指定，不再自动探测）
+bridge stacks list
+bridge stacks set matt,superpowers   # 按顺序分配 priority
+bridge stacks add openspec            # 追加到末尾
+bridge stacks remove matt             # 删除并重新编号
+
+# 配置文件
+<repo>/.bridge-config.json       # 项目级（覆盖全局）
+~/.config/spec-bridge/config.json  # 全局默认
+```
+
+**4 档强度级别**（`bridge mode` 参数值，非命令名）：
+- `full`（默认）：memory + navigator + builtin
+- `memory`：personal/team memory only
+- `navigator`：外部栈推荐 only
+- `off`：关闭所有自动行为
+
+**配置读取顺序**：项目级 → 全局 → 默认值 `{mode:'full', stacks:[]}`
+
 | 命令 | 用途 |
 |---|---|
 | `layout <root>` | 探测 openspec/standalone 布局 |
@@ -368,3 +396,36 @@ CodeBuddy 自身的 `memory`（`.codebuddy/memory/`）也是同理——日常 b
 - 写规则硬约束解决"AI 写流水账"——每行必带 why，推荐格式 `vX.Y.Z: 砍 X 因为 Y`
 
 **v1.8-3 schema 变化**：无字段名变更；probe 输出加 `memory_hint` 字段（AI 可见，不写 `.bridge.yaml`）。
+
+### v1.9-1 CHANGELOG（ADR-0014，command-panel-and-stacks）
+
+**核心叙事**：bridge 从"自动探测外栈"转向"手动配置能力栈 + 持久化强度级别"，参考 ponytail 的 `/ponytail [lite|full|ultra|off]` 命令面板。
+
+- **D1 4 档强度级别**：
+  - `full`（默认）：memory + navigator + builtin 全功能
+  - `memory`：只启用个人/团队 memory（v1.8-3）
+  - `navigator`：只推荐外栈，不建 memory/builtin
+  - `off`：关闭所有自动行为，只响应显式命令
+- **D2 能力栈配置（去掉自动探测）**：
+  - 3 种栈：`openspec` / `matt` / `superpowers` / `builtin`
+  - 多选 + 优先级排序（`stacks set matt,superpowers` → matt priority=1, superpowers priority=2）
+- **D3 持久化配置**：
+  - 项目级：`<repo>/.bridge-config.json`（优先）
+  - 全局：`~/.config/spec-bridge/config.json`
+  - 项目级完全覆盖全局（不合并）
+- **D7 命令族**：
+  - `bridge mode [full|memory|navigator|off]`：查询/设置模式
+  - `bridge stacks list|set|add|remove`：管理能力栈
+- **D8 入口例程**：SKILL.md §1 加 ② 读取配置步骤，每轮重算（不依赖会话状态）
+- **D9 配置格式**：JSON（非 YAML，避免依赖）
+
+**测试**：188/188 全绿（v1.9-1 新加 14 测试：mode 6 + stacks 8）
+
+**v1.9-1 不破坏 v1.8**：自动探测逻辑仍保留（探测在 stacks 配置为空时 fallback），v1.9-2 才完全删除探测
+
+**为什么是"命令面板"模式**：
+- 用户工作流固定（一个 repo 长期用 1-2 个栈），不需要每次探测
+- 强度级别不是"功能开关"，而是"工作模式"（用户选择"想让 bridge 帮我做多少事"）
+- 持久化配置让"设置一次，永久生效"，不用每次对话都声明
+
+**v1.9-1 schema 变化**：新增 `.bridge-config.json`（项目级 + 全局两层），AI 可见但不写（CLI 读写）

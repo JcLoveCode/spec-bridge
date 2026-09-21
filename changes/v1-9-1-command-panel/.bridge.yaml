@@ -1,0 +1,33 @@
+# .bridge.yaml — spec-bridge change state
+# Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
+
+# === Lifecycle ===
+stage: planning
+layout: standalone
+branch: null
+
+# === Workflow (v1.2) ===
+workflow_kind: superpowers
+parent: null
+parent_artifacts_hash: null
+
+# === Capabilities (probed once per change) ===
+capabilities: null
+tags: null
+
+# === Contract gate ===
+contract_approved: null
+artifacts_hash: null
+contract_hash: null
+
+# === External stack (v1.8-1 ADR-0011 D3) ===
+external_stack: null
+adopted_at: null
+
+# === Publication receipt (written by vendored sync) ===
+published: false
+spec_publication_receipt: null
+
+# === Resume ===
+next: use external stack skill (openspec-propose / matt to-spec / superpowers brainstorming) — when done, bridge archive entry
+last_event: init: scaffolded v1-9-1-command-panel (layout=standalone, workflow=superpowers, autoProbe=true, capabilities=unset)

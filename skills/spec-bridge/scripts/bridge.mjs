@@ -27,6 +27,8 @@ import { run as runRebuttal } from './cmd-rebuttal.mjs';
 import { run as runDistill } from './cmd-distill.mjs';
 import { run as runArchiveReady } from './cmd-archive-ready.mjs';
 import { run as runMemory } from './cmd-memory.mjs';
+import { run as runMode } from './cmd-mode.mjs';
+import { run as runStacks } from './cmd-stacks.mjs';
 import { readState, writeState, appendEvent, checkStageTransition } from './vendor/bridge-state.mjs';
 import { validatePublicationReceipt } from './vendor/spec-publication.mjs';
 import { execFileSync } from 'node:child_process';
@@ -57,6 +59,8 @@ function usage(code = 2) {
     '  layout <project-root>              detect openspec vs standalone layout',
     '  list <project-root>                list active changes (skips archive/)',
     '  memory <init|append|show|sync|reconcile> [...]\n                                     personal + team memory (v1.8-3 / ADR-0013): IDE preferred; archive triggers CLI sha256 sync',
+    '  mode [full|memory|navigator|off]    set/query bridge strength preset (v1.9-1 / ADR-0014)',
+    '  stacks [list|set|add|remove] [kinds]\n                                     manage configured ability stacks (v1.9-1, replaces auto-detect)',
   ].join('\n');
   (code === 0 ? console.log : console.error)(text);
   process.exit(code);
@@ -216,6 +220,17 @@ async function main() {
   if (command === 'memory') {
     const result = await runMemory(rest);
     process.exit(result.exitCode ?? 0);
+  }
+
+  // v1.9-1 (ADR-0014)：命令面板 + 持久化配置（mode + stacks）
+  if (command === 'mode') {
+    runMode({ _: rest, projectRoot: process.cwd() });
+    process.exit(0);
+  }
+
+  if (command === 'stacks') {
+    runStacks({ _: rest, projectRoot: process.cwd() });
+    process.exit(0);
   }
 
   if (command === 'pattern') {
