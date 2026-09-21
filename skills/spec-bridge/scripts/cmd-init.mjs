@@ -7,6 +7,7 @@ import { basename, join, resolve, sep } from 'node:path';
 import { appendEvent, readState, writeState, resolveParent } from './vendor/bridge-state.mjs';
 import { detectStack } from './vendor/detect-stack.mjs';
 import { run as runProbe } from './cmd-probe.mjs';
+import { initPersonalMemory } from './cmd-memory.mjs';
 
 const KEBAB_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const MAX_WALENCH = 10;
@@ -208,6 +209,8 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
     // v1.8-2 (ADR-0012 D1)：next 字段文案同步——不再引导编辑 5 件模板，引导用外栈 skill。
     next: 'use external stack skill (openspec-propose / matt to-spec / superpowers brainstorming) — when done, bridge archive entry',
   });
+  // v1.8-3 (ADR-0013 D1+D2)：个人层 memory init——探测 IDE 自带 memory 不在场时写空骨架
+  initPersonalMemory(changeDir, projectRoot);
   appendEvent(changeDir, `init: scaffolded ${basename(changeDir)} (layout=${layout}, workflow=${workflowKind}, autoProbe=${autoProbe}, capabilities=${next.capabilities ?? 'unset'}${parentSnapshot ? `, parent=${parentSnapshot.parent}` : ''})`);
 
   stdout.write(`${changeDir}\n`);

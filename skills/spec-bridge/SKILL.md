@@ -19,7 +19,7 @@ description: Single-entry workflow router that bridges user-installed OpenSpec (
 本 skill 目录下的 `scripts/bridge.mjs` 是唯一确定性入口（下文所有命令里的 `<bridge>` 指它的绝对路径，
 即本 SKILL.md 所在目录拼 `scripts/bridge.mjs`）。Node ≥ 20。
 
-**查命令**：`node <bridge>` 无参数 = dump 全部 14 条命令清单（最快查用法，不依赖 IDE 显示）。
+**查命令**：`node <bridge>` 无参数 = dump 全部 15 条命令清单（最快查用法，不依赖 IDE 显示）。
 
 ## 1. 入口例程（每次触发先走这五步，不许跳过）
 
@@ -209,8 +209,9 @@ node <bridge> hashes <change-dir> --check   # 漂移 → 停，回到 contracted
 | `mention/rootcause <dir> --tag <t>` | 模式信号 + 全库历史计数（ADR-0007） |
 | `rebuttal <dir> <一句话>` | 复验异议落盘（rebuttals/，零状态变更） |
 | `event <dir> <text>` | 追加大事记到 `.bridge.log` |
+| `memory init/append/show/sync/reconcile <dir>` | 个人层 + 团队层 memory（v1.8-3 / ADR-0013）—— 个人层脑补 team memory；sync CLI 算 hash；reconcile 不删原 cap |
 
-> v1.3 起 14 条（原 13 + 新增 `adopt`）。详见 §6 跨协议路由 + ADR-0008。
+> v1.8-3 起 15 条（原 14 + 新增 `memory`）。详见 §4.5 写规则硬约束 + ADR-0013。
 
 ## 6. 跨协议路由（v1.3，cross-protocol router）
 

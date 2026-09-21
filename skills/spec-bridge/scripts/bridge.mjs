@@ -26,6 +26,7 @@ import { run as runMention, runRootcause } from './cmd-mention.mjs';
 import { run as runRebuttal } from './cmd-rebuttal.mjs';
 import { run as runDistill } from './cmd-distill.mjs';
 import { run as runArchiveReady } from './cmd-archive-ready.mjs';
+import { run as runMemory } from './cmd-memory.mjs';
 import { readState, writeState, appendEvent, checkStageTransition } from './vendor/bridge-state.mjs';
 import { validatePublicationReceipt } from './vendor/spec-publication.mjs';
 
@@ -54,6 +55,7 @@ function usage(code = 2) {
     '  hashes <change-dir> [--check]      artifact digests / contract staleness check',
     '  layout <project-root>              detect openspec vs standalone layout',
     '  list <project-root>                list active changes (skips archive/)',
+    '  memory <init|append|show|sync|reconcile> [...]\n                                     personal + team memory (v1.8-3 / ADR-0013): IDE preferred; archive triggers CLI sha256 sync',
   ].join('\n');
   (code === 0 ? console.log : console.error)(text);
   process.exit(code);
@@ -206,6 +208,12 @@ async function main() {
   // v1.7 (ADR-0010/D4)：导航员激活 — 4 维度探测 + 4 级路由 + 合并 next hint + D5 stdout
   if (command === 'probe') {
     const result = await runProbe(rest);
+    process.exit(result.exitCode ?? 0);
+  }
+
+  // v1.8-3 (ADR-0013)：memory 子命令族（init/append/show/sync/reconcile）
+  if (command === 'memory') {
+    const result = await runMemory(rest);
     process.exit(result.exitCode ?? 0);
   }
 

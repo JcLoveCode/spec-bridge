@@ -6,6 +6,7 @@ import { existsSync, readdirSync, statSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { appendEvent, readState, resolveParent, writeState } from './vendor/bridge-state.mjs';
 import { detectProjectRoot } from './cmd-init.mjs';
+import { initPersonalMemory } from './cmd-memory.mjs';
 
 const WORKFLOW_KINDS = new Set(['openspec', 'matt', 'builtin']);
 // v1.8-1 (ADR-0011 D3)：外栈值域，'auto' 是探测哨兵。
@@ -166,6 +167,10 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   });
 
   // 第一条大事记（D4 关键事件：adopt 信号原样记录，含 signals 列表供回溯）
+  // v1.8-3 (ADR-0013 D1+D2)：个人层 memory init——探测 IDE 自带 memory 不在场时写空骨架
+  if (projectRoot) {
+    initPersonalMemory(changeDir, projectRoot);
+  }
   appendEvent(changeDir, `adopt: adopted ${basename(changeDir)} from external artifacts (workflow=${workflowKind}, stack=${externalStack}, layout=${layout}, signals=[${signals.join(',')}]${parentSnapshot ? `, parent=${parentSnapshot.parent}` : ''})`);
 
   stdout.write(`${changeDir}\n`);

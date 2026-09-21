@@ -13,11 +13,12 @@
 //       其他等于 cwd 的路径时，自动在 cwd/changes/ 下找唯一含 .bridge.yaml
 //       的 change 目录；用户显式给非 cwd 路径不兜底（避免掩盖错）
 
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { readState } from './vendor/bridge-state.mjs';
 import { detectLayout } from './bridge.mjs';
 import { run as runNext } from './cmd-next.mjs';
+import { detectIdeMemory } from './cmd-memory.mjs';
 
 function parseArgs(rawArgs) {
   const positional = [];
@@ -94,6 +95,37 @@ function resolveImplicitChangeDir(cwd) {
   return { found: null };
 }
 
+// v1.8-3 (ADR-0013 D4)：memory_hint 单行 KEY:value 输出。
+//   personal=ide(.codebuddy/memory/,daily=N,curated=N) | personal=bridge(<path>,lines=N) | personal=none(empty)
+//   team_caps=cap1,cap2,... | team_lines=N
+function buildMemoryHint(changeDir, projectRoot) {
+  const ide = detectIdeMemory(projectRoot);
+  const memPath = join(changeDir, 'memory.md');
+  let personalSegment = 'personal=none(empty)';
+  if (ide.present && !ide.isEmpty) {
+    personalSegment = `personal=ide(.codebuddy/memory/,daily=${ide.dailyCount},curated=${ide.curatedLines})`;
+  } else if (existsSync(memPath)) {
+    const content = readFileSync(memPath, 'utf8');
+    const nonEmpty = content.split('\n').filter((l) => l.trim().length > 0).length;
+    personalSegment = `personal=bridge(${memPath},lines=${nonEmpty})`;
+  }
+  const teamDir = join(projectRoot, '.bridge', 'team');
+  let caps = [];
+  let totalLines = 0;
+  if (existsSync(teamDir)) {
+    const entries = readdirSync(teamDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const capMemPath = join(teamDir, entry.name, 'memory.md');
+      if (!existsSync(capMemPath)) continue;
+      caps.push(entry.name);
+      const capContent = readFileSync(capMemPath, 'utf8');
+      totalLines += capContent.split('\n').filter((l) => l.trim().length > 0).length;
+    }
+  }
+  return `${personalSegment}; team_caps=${caps.join(',') || '(none)'}; team_lines=${totalLines}`;
+}
+
 export async function run(args, { stdout = process.stdout, stderr = process.stderr, cwd = process.cwd() } = {}) {
   const { positional, flags } = parseArgs(args);
   if (!positional[0]) {
@@ -134,5 +166,7 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   stdout.write(`advised_reason: ${routed.advised_reason}\n`);
   stdout.write(`advised_invocation: ${skillToInvocation(routed.advised_skill)}\n`);
   stdout.write(`next_hint: ${next_hint}\n`);
+  // v1.8-3 (ADR-0013 D4)：memory_hint 三态输出——让 AI 一眼看到"上次讲过啥"
+  stdout.write(`memory_hint: ${buildMemoryHint(changeDir, cwd)}\n`);
   return { exitCode: 0 };
 }
