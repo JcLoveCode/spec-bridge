@@ -244,3 +244,11 @@ node <bridge> hashes <change-dir> --check   # 漂移 → 停，回到 contracted
 - **能力阶梯 L3/L4 区分**：把"状态机中断"和"agent 自身"从原"次选/兜底"拆出来——前者是 CLI 接管能力空白，后者是 LLM 本职不该 CLI 化。
 
 详见 ADR-0008（设计源）+ §1 多栈并存守卫 + CONTEXT.md 能力阶梯 v2 术语。
+
+## 7. 未来路线（v1.7+ 留口子）
+
+bridge 当前只做"提炼 + 归档"。未来要加的"项目图谱层"——把 spec 提炼后的产物可视化为项目结构图、跨模块依赖图、改动影响图，给团队用。这个能力目前叫 **spec-mgr**，**不**在当前 spec-bridge 仓库里。
+
+v1.7 不动 schema（保留 4 个 receipt 字段：`artifacts_hash / contract_hash / published / spec_publication_receipt`）。后续 v1.8+ 起独立 change 时，再开 `cross_refs` 字段供图谱层消费。
+
+CodeBuddy 自身的 `memory`（`.codebuddy/memory/`）也是同理——日常 buffer 由 IDE 自己填；大改动后生成"项目用图谱"是未来能力，不在 v1.7 范围。
