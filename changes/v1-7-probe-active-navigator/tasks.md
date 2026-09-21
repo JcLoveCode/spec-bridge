@@ -19,8 +19,8 @@
 
 ## Batch 2 — SKILL.md §1 加"每轮状态宣告"段 + specs/cli/probe/spec.md
 
-- [ ] **T2.1** SKILL.md §1 加"每轮状态宣告"段：规定 AI 每轮消息开头写 `[inventory] 本轮调了：XXX, YYY` 行；不宣告不算已用
-- [ ] **T2.2** 新建 `specs/cli/probe/spec.md`：probe 命令的 source-of-truth spec（含 R1-R5 场景 + D5 输出格式）
+- [x] **T2.1** SKILL.md §1.5 加"每轮状态宣告"段：规定 AI 每轮消息开头写 `[inventory] 本轮调了：XXX, YYY` 行；不宣告不算已用
+- [x] **T2.2** 新建 `specs/cli/probe/spec.md`：probe 命令的 source-of-truth spec（含 R1-R4 + D5 输出格式 + C2-C9 约束）
 
 完成定义：SKILL.md §1 含宣告段；specs/cli/probe/spec.md 落地
 审查时点：批末

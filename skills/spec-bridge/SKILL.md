@@ -42,6 +42,27 @@ description: Single-entry workflow router that bridges user-installed OpenSpec (
 换对话、聊岔了、隔了几天——重复这套例程即可，磁盘状态就是全部真相。
 产物与状态矛盾时，**以产物为准**（状态文件丢了就按内容重建）。
 
+## 1.5 每轮状态宣告（v1.7 / 导航员激活）
+
+AI 在**每轮回复的第一行**必须写一行 inventory 宣告——用户可见、AI 可追溯：
+
+```
+[inventory] 本轮调了：<skill1>, <skill2>, ...
+```
+
+规则：
+- **不宣告不算已用**——没写这一行的 skill 视为没调（审计追溯以宣告为准）
+- inventory 内容必须传给 probe：`bridge probe . --inventory "<同上一行内容>"`
+- probe 路由按 inventory 的栈归属判定（C6：Superpowers > Matt > OpenSpec > 兜底）
+- 空轮次（只回答用户问题没调 skill）也要写：`[inventory] 本轮调了：(none)`
+- AI 不靠"内心记忆"——每轮开头重写一次（即使上轮写过）
+- 多栈并存时按优先级顺序写，例：`[inventory] 本轮调了：superpowers:test-driven-development, openspec:apply-change`
+
+设计动机：probe 的路由输入是 `--inventory` flag；AI 不宣告 → 用户看不到调过啥 → 审计黑洞；
+没宣告的 skill 在下一轮 probe 时不会出现在 inventory → 路由退到兜底，导航失活。
+
+详见 `specs/cli/probe/spec.md`（probe 命令的 source-of-truth spec）。
+
 ## 2. 能力探测（每个 change 只做一次，结果写入 capabilities）
 
 **项目层**（这个仓库用哪套栈，文件系统证据）：
