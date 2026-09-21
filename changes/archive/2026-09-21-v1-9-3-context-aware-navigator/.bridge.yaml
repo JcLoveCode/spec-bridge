@@ -2,7 +2,7 @@
 # Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
 
 # === Lifecycle ===
-stage: executing
+stage: archived
 layout: null
 branch: null
 
@@ -30,4 +30,4 @@ spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1Njo0YzVmMj
 
 # === Resume ===
 next: null
-last_event: stage: contracted → executing
+last_event: memory sync FAILED: The "path" argument must be of type string. Received undefined

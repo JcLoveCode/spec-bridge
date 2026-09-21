@@ -2,7 +2,7 @@
 # Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
 
 # === Lifecycle ===
-stage: executing
+stage: archived
 layout: standalone
 branch: null
 
@@ -30,4 +30,4 @@ spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1NjowNzAwOW
 
 # === Resume ===
 next: use external stack skill (openspec-propose / matt to-spec / superpowers brainstorming) — when done, bridge archive entry
-last_event: stage: planning → executing
+last_event: memory sync FAILED: The "path" argument must be of type string. Received undefined
