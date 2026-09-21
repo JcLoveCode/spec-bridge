@@ -70,17 +70,18 @@ test('R3 场景 2：matt kind 只建台账 + 空 specs/（不写 5 模板）', (
   }
 });
 
-// R3 场景 3：builtin kind（默认）→ 现状 5 模板路径，向后兼容 v1.2 R1
-test('R3 场景 3：builtin kind（默认）走现状 5 模板路径，向后兼容 v1.2 R1', () => {
+// R3 场景 3（v1.8-1）：--builtin 标志显式触发 v1.7 5 模板路径，向后兼容 v1.2 R1。
+// 默认行为在 v1.8-1 已变（不再生成 5 模板），所以测的是"显式 --builtin"逃生口。
+test('R3 场景 3（v1.8-1）：bridge init --builtin 走 v1.7 5 模板路径（逃生口）', () => {
   const root = makeSandbox();
   try {
-    const result = bridge(['init', 'demo'], root);  // 默认 builtin
+    const result = bridge(['init', 'demo', '--builtin'], root);
     assert.equal(result.status, 0, `stderr: ${result.stderr}`);
     const changeDir = join(root, 'changes', 'demo');
     assert.ok(existsSync(join(changeDir, '.bridge.yaml')));
     assert.ok(existsSync(join(changeDir, 'specs', 'demo', 'spec.md')));
     for (const f of TEMPLATES) {
-      assert.ok(existsSync(join(changeDir, f)), `${f} 必须存在（builtin kind 兜底）`);
+      assert.ok(existsSync(join(changeDir, f)), `${f} 必须存在（--builtin 逃生口）`);
     }
     const bridgeYaml = readFileSync(join(changeDir, '.bridge.yaml'), 'utf-8');
     assert.match(bridgeYaml, /workflow_kind:\s*builtin/);

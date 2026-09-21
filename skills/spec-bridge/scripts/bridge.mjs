@@ -397,7 +397,13 @@ async function main() {
   usage(2);
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : String(error));
-  process.exit(1);
-});
+// v1.8-1 (ADR-0011 D5)：避免被 import 时副作用触发 main()（cmd-init 调 cmd-probe 间接 import bridge.mjs）。
+// 仅当本文件作为入口执行时（argv[1] === 本文件路径）才自动跑 main()。
+import { fileURLToPath } from 'node:url';
+const __isMain = process.argv[1] === fileURLToPath(import.meta.url);
+if (__isMain) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}

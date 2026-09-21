@@ -34,6 +34,20 @@ function parseArgs(rawArgs) {
   return { positional, flags };
 }
 
+// v1.8-1 (ADR-0011 D4)：advised_skill → use_skill 命令的映射，让 AI 可机械执行（不再查 SKILL.md）。
+// 映射规则：advised_skill 子串 → use_skill 调用语法。
+function skillToInvocation(advisedSkill) {
+  if (advisedSkill === '(none)') {
+    return '(fallback to builtin: edit proposal/design/tasks/spec)';
+  }
+  const lower = advisedSkill.toLowerCase();
+  if (lower.includes('matt') || lower.includes('to-spec')) return 'use_skill to-spec';
+  if (lower.includes('openspec') || lower.includes('propose')) return 'use_skill openspec-propose';
+  if (lower.includes('superpowers') || lower.includes('tdd')) return 'use_skill tdd';
+  // 默认：直接把 advised_skill 当 use_skill 的参数
+  return `use_skill ${advisedSkill}`;
+}
+
 function routeSkill(inventory) {
   const lower = inventory.map((s) => s.toLowerCase());
   for (const skill of lower) {
@@ -117,6 +131,7 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   stdout.write(`inventory: ${inventory.join(',')}\n`);
   stdout.write(`advised_skill: ${routed.advised_skill}\n`);
   stdout.write(`advised_reason: ${routed.advised_reason}\n`);
+  stdout.write(`advised_invocation: ${skillToInvocation(routed.advised_skill)}\n`);
   stdout.write(`next_hint: ${next_hint}\n`);
   return { exitCode: 0 };
 }

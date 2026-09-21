@@ -4,7 +4,7 @@
 // 与 cmd-init.mjs 风格对齐：default export run(args, { stdout, stderr })。
 import { existsSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { appendEvent } from './vendor/bridge-state.mjs';
+import { appendEvent, readState } from './vendor/bridge-state.mjs';
 
 function parseArgs(rawArgs) {
   const positional = [];
@@ -134,6 +134,16 @@ export async function run(args, io = {}) {
   if (!cap) {
     stderr.write(`no specs/<cap>/spec.md under ${changeDir} — cannot determine target capability\n`);
     return { exitCode: 1 };
+  }
+
+  // v1.8-1 (ADR-0011 C10)：external_stack change 的 design.md 通常是外栈格式，
+  // 不含 bridge 的 ### D<N> — name 决策记录；distill 跳过并提示，不强写 why.md。
+  // 调用方需另行调外栈自带工具生成对应"why"。
+  const state = readState(changeDir);
+  if (state.external_stack) {
+    stderr.write(`skip: ${changeDir} is external_stack=${state.external_stack} — distill is bridge-internal; use the external stack's own why generator.\n`);
+    appendEvent(changeDir, `distill: skipped (external_stack=${state.external_stack})`);
+    return { exitCode: 0 };
   }
 
   const whyPath = join(changeDir, 'specs', cap, 'why.md');

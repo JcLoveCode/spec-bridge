@@ -29,6 +29,10 @@ const BUILTIN_DEFAULTS = {
   artifacts_hash: null,
   // execution-contract.md 内容摘要。
   contract_hash: null,
+  // v1.8-1 (ADR-0011 D3)：外栈标识——bridge adopt 接管外栈产物时写入，null | 'matt' | 'openspec' | 'superpowers'。
+  external_stack: null,
+  // v1.8-1 (ADR-0011 D3)：adopt 时间戳（ISO 8601），仅 adopt 时写入。
+  adopted_at: null,
   // 发布回执（由 vendored cmd-sync 写入）。
   published: false,
   spec_publication_receipt: null,
@@ -91,6 +95,10 @@ export function writeState(changeDir, state) {
   lines.push(`contract_approved: ${oneLine(merged.contract_approved) ?? 'null'}`);
   lines.push(`artifacts_hash: ${merged.artifacts_hash ?? 'null'}`);
   lines.push(`contract_hash: ${merged.contract_hash ?? 'null'}`);
+  lines.push('');
+  lines.push('# === External stack (v1.8-1 ADR-0011 D3) ===');
+  lines.push(`external_stack: ${oneLine(merged.external_stack) ?? 'null'}`);
+  lines.push(`adopted_at: ${oneLine(merged.adopted_at) ?? 'null'}`);
   lines.push('');
   lines.push('# === Publication receipt (written by vendored sync) ===');
   lines.push(`published: ${merged.published === true ? 'true' : 'false'}`);

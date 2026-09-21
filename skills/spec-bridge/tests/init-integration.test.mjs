@@ -25,7 +25,7 @@ function bridge(args, cwd) {
 test('R1 场景 1.1 + 1.4：成功脚手架 standalone change（5 文件 + state + log + stdout 路径）', () => {
   const root = makeSandbox(true);
   try {
-    const result = bridge(['init', 'demo-feature', '--branch', 'REQ-42'], root);
+    const result = bridge(['init', 'demo-feature', '--branch', 'REQ-42', '--builtin'], root);
     assert.equal(result.status, 0, `stderr: ${result.stderr}`);
     const changeDir = join(root, 'changes', 'demo-feature');
     for (const file of ['proposal.md', 'design.md', 'tasks.md', 'execution-contract.md']) {
@@ -164,7 +164,7 @@ test('R3（修正后语义）：非 git 且无 changes/ 祖先 → cwd 兜底 + 
 test('D4：--capability 覆盖默认 capability 目录名', () => {
   const root = makeSandbox(true);
   try {
-    const result = bridge(['init', 'demo-feature', '--capability', 'cli'], root);
+    const result = bridge(['init', 'demo-feature', '--capability', 'cli', '--builtin'], root);
     assert.equal(result.status, 0, `stderr: ${result.stderr}`);
     assert.ok(existsSync(join(root, 'changes', 'demo-feature', 'specs', 'cli', 'spec.md')), 'spec 应落在 --capability 指定目录');
   } finally {

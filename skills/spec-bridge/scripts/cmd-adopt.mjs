@@ -8,8 +8,22 @@ import { appendEvent, readState, resolveParent, writeState } from './vendor/brid
 import { detectProjectRoot } from './cmd-init.mjs';
 
 const WORKFLOW_KINDS = new Set(['openspec', 'matt', 'builtin']);
+// v1.8-1 (ADR-0011 D3)：外栈值域，'auto' 是探测哨兵。
+const EXTERNAL_STACKS = new Set(['matt', 'openspec', 'superpowers', 'builtin', 'auto']);
 // 接管信号：顶层 4 产物 + specs/<cap>/spec.md 任一在场即满足（D4）。
 const TOP_LEVEL_SIGNALS = ['proposal.md', 'design.md', 'tasks.md', 'execution-contract.md'];
+
+// v1.8-1 (ADR-0011 D3)：从接管信号反推外栈。
+// 启发式：顶层 4 件标准模板任一在场 → matt（matt `to-spec` / openspec-propose 都从这 4 件产物入手）。
+// specs/<cap>/spec.md 单独在场 → 也算 matt（外栈 spec-executor 只产 spec.md）。
+// 其它 → builtin。
+function detectStackFromSignals(signals) {
+  if (signals.length === 0) return 'builtin';
+  const hasTopLevel = TOP_LEVEL_SIGNALS.some((s) => signals.includes(s));
+  if (hasTopLevel) return 'matt';
+  if (signals.some((s) => s.startsWith('specs/'))) return 'matt';
+  return 'builtin';
+}
 
 function detectLayout(projectRoot) {
   if (existsSync(join(projectRoot, 'openspec'))) {
@@ -102,6 +116,15 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
     return { exitCode: 2 };
   }
 
+  // v1.8-1 (ADR-0011 D3)：--stack <kind|auto> 标志显式指定外栈；'auto' 走探测（D3 信号启发式）。
+  const stackFlag = flags.stack;
+  if (stackFlag && !EXTERNAL_STACKS.has(stackFlag)) {
+    stderr.write(`invalid --stack '${stackFlag}' — must be one of: matt, openspec, superpowers, builtin, auto\n`);
+    return { exitCode: 2 };
+  }
+  const externalStack = (stackFlag && stackFlag !== 'auto') ? stackFlag : detectStackFromSignals(signals);
+  const adoptedAt = new Date().toISOString();
+
   // 探测项目根 → layout（缺省显式 flag 走探测，否则走 flag；非 git 或探测失败 → standalone 兜底）
   const projectRoot = findProjectRoot(changeDir);
   const detected = projectRoot ? detectLayout(projectRoot) : null;
@@ -130,20 +153,23 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   }
 
   // 写台账（与 cmd-init.mjs L299-308 同构：stage=planning + workflow_kind + parent snapshot + next hint）
+  // v1.8-1 (ADR-0011 D3)：外栈字段 — external_stack + adopted_at。
   writeState(changeDir, {
     ...readState(changeDir),
     stage: 'planning',
     layout,
     workflow_kind: workflowKind,
+    external_stack: externalStack,
+    adopted_at: adoptedAt,
     ...(parentSnapshot ? { parent: parentSnapshot.parent, parent_artifacts_hash: parentSnapshot.hash } : {}),
-    next: 'edit/add missing artifacts (proposal/design/tasks/contract) to advance to contracted',
+    next: `use_skill to-spec — synthesize the conversation into a ${externalStack} spec (adopted from ${externalStack} at ${adoptedAt})`,
   });
 
   // 第一条大事记（D4 关键事件：adopt 信号原样记录，含 signals 列表供回溯）
-  appendEvent(changeDir, `adopt: adopted ${basename(changeDir)} from external artifacts (workflow=${workflowKind}, layout=${layout}, signals=[${signals.join(',')}]${parentSnapshot ? `, parent=${parentSnapshot.parent}` : ''})`);
+  appendEvent(changeDir, `adopt: adopted ${basename(changeDir)} from external artifacts (workflow=${workflowKind}, stack=${externalStack}, layout=${layout}, signals=[${signals.join(',')}]${parentSnapshot ? `, parent=${parentSnapshot.parent}` : ''})`);
 
   stdout.write(`${changeDir}\n`);
-  stdout.write(`adopted: wrote .bridge.yaml + .bridge.log; existing artifacts untouched (signals: ${signals.join(', ')})\n`);
-  stdout.write(`next: edit/add missing artifacts to advance to contracted\n`);
+  stdout.write(`adopted: wrote .bridge.yaml + .bridge.log; existing artifacts untouched (signals: ${signals.join(', ')}, stack=${externalStack})\n`);
+  stdout.write(`next: use_skill to-spec — synthesize the conversation into a ${externalStack} spec\n`);
   return { exitCode: 0 };
 }

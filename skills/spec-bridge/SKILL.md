@@ -273,3 +273,20 @@ bridge 当前只做"提炼 + 归档"。未来要加的"项目图谱层"——把
 v1.7 不动 schema（保留 4 个 receipt 字段：`artifacts_hash / contract_hash / published / spec_publication_receipt`）。后续 v1.8+ 起独立 change 时，再开 `cross_refs` 字段供图谱层消费。
 
 CodeBuddy 自身的 `memory`（`.codebuddy/memory/`）也是同理——日常 buffer 由 IDE 自己填；大改动后生成"项目用图谱"是未来能力，不在 v1.7 范围。
+
+### v1.8-1 CHANGELOG（ADR-0011，bridge-as-navigator）
+
+**默认行为变 + 双逃生口**：所有"默认行为变"都配 `--old-behavior` 类 flag。
+
+- **D1 init 默认只建台账**（不写 5 件模板）+ 默认自动调 `bridge probe`：
+  - `--builtin` → 强制生成 5 件模板（v1.7 行为）
+  - `--no-auto-probe` → 跳过默认自动 probe（CI 用）
+  - 重复 init 同名 change → exit 3
+- **D2 init workflow_kind 推导加第 4 级"项目栈探测"**：`vendor/detect-stack.mjs` 看项目根是否有 `.claude-plugin/ + package.json:matt-skills`（→ matt）、`openspec/`（→ openspec）、都没有（→ builtin）
+- **D3 adopt 写 `external_stack` + `adopted_at`**：外栈产物接管有台账 + 审计时间戳
+- **D4 distill 跳过 external_stack change**：exit 0 + stderr 提示用外栈自带 why generator
+- **D5 probe 输出 `advised_invocation`**：配合 v1.7 `advised_skill` 给 AI 完整推荐包
+
+**v1.8 schema 扩展**（AGENTS.md 禁止事项 §3 同步）：`external_stack` / `adopted_at` 字段在 v1.8-1 起允许；`cross_refs` 在 v1.8-1 仍不开（留给后续 change）。
+
+**为什么是"导航员优先"**：init 默认建空台账 + 自动 probe → 用户立刻看到推荐 → 主动用外栈生成 spec，不再"先写 5 件模板 → 发现要走外栈 → 白做"。

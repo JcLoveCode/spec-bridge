@@ -5,15 +5,18 @@ import { spawnSync as spawnShim } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
 import { basename, join, resolve, sep } from 'node:path';
 import { appendEvent, readState, writeState, resolveParent } from './vendor/bridge-state.mjs';
+import { detectStack } from './vendor/detect-stack.mjs';
+import { run as runProbe } from './cmd-probe.mjs';
 
 const KEBAB_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const MAX_WALENCH = 10;
 // v1.2 (ADR-0004/D1)：workflow_kind 合法值域。
 const WORKFLOW_KINDS = new Set(['openspec', 'matt', 'builtin']);
 
-// v1.2 (ADR-0004/D1)：三级推导——显式 --workflow-kind > --capabilities 首值（须在值域内）> builtin。
+// v1.2 (ADR-0004/D1)：四级推导——显式 --workflow-kind > --capabilities 首值（须在值域内）> 项目栈探测 > builtin。
 // 返回 null 表示显式给了非法值（调用方报错 exit 2）。
-function deriveWorkflowKind(flags) {
+// v1.8-1 (ADR-0011 D2)：第 4 级 fallback 从硬编码 'builtin' 改成 `detectedPrimary`（detect-stack.mjs 输出）。
+function deriveWorkflowKind(flags, detectedPrimary = 'builtin') {
   if (flags['workflow-kind']) {
     return WORKFLOW_KINDS.has(flags['workflow-kind']) ? flags['workflow-kind'] : null;
   }
@@ -21,7 +24,7 @@ function deriveWorkflowKind(flags) {
     const first = flags.capabilities.split(',')[0].trim();
     if (WORKFLOW_KINDS.has(first)) return first;
   }
-  return 'builtin';
+  return detectedPrimary;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -254,7 +257,7 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   const { positional, flags } = parseArgs(args);
 
   if (positional.length === 0) {
-    stderr.write('Usage: bridge init <name> [--capability <cap>] [--branch <branch>] [--layout <standalone|openspec>] [--capabilities <comma,list>] [--workflow-kind <openspec|matt|builtin>] [--parent <archived-change-id>]\n');
+    stderr.write('Usage: bridge init <name> [--capability <cap>] [--branch <branch>] [--layout <standalone|openspec>] [--capabilities <comma,list>] [--workflow-kind <openspec|matt|builtin>] [--parent <archived-change-id>] [--builtin] [--no-auto-probe]\n');
     return { exitCode: 2 };
   }
 
@@ -264,11 +267,11 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
     return { exitCode: 2 };
   }
 
-  const workflowKind = deriveWorkflowKind(flags);
-  if (workflowKind === null) {
-    stderr.write(`invalid --workflow-kind '${flags['workflow-kind']}' — must be one of: openspec, matt, builtin\n`);
-    return { exitCode: 2 };
-  }
+  // v1.8-1 (ADR-0011 D1)：默认行为变 — 只建台账（不生成 5 件模板）。
+  // --builtin 强制 v1.7 旧行为（向后兼容逃生口）；--no-auto-probe 跳过默认自动 probe。
+  const builtin = flags.builtin === 'true';
+  const noAutoProbe = flags['no-auto-probe'] === 'true';
+  const autoProbe = !noAutoProbe;
 
   // v1.2 (ADR-0005/D3)：续作引用快照——占位，实际解析在 changesDir 确定后执行。
   let parentSnapshot = null;
@@ -280,7 +283,16 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
 
   const projectRoot = detected.root;
   const detectedLayout = detectLayout(projectRoot);
+  // v1.8-1 (ADR-0011 D2)：项目栈探测 — 用于 init 默认 workflow_kind fallback。
+  const stackDetection = detectStack(projectRoot);
   const layout = flags.layout || detectedLayout.layout;
+
+  // workflowKind 派生（flags > capabilities > 项目栈探测 > builtin）；非法显式值报错 exit 2。
+  const workflowKind = deriveWorkflowKind(flags, stackDetection.primary);
+  if (workflowKind === null) {
+    stderr.write(`invalid --workflow-kind '${flags['workflow-kind']}' — must be one of: openspec, matt, builtin\n`);
+    return { exitCode: 2 };
+  }
   const changesDir = layout === 'openspec'
     ? join(projectRoot, 'openspec', 'changes')
     : join(projectRoot, 'changes');
@@ -309,10 +321,9 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   mkdirSync(capDir, { recursive: true });
   const values = { NAME: name, CAP: flags.capability || defaultCapability(name) };
 
-  // v1.3 Batch 2 (D3)：按 --workflow-kind 分支产物路径。
-  // openspec / matt → 只建台账 + 空 specs/，避免与外栈产物生成器冲突（openspec 自出 proposal/design/tasks/spec；matt 走 to-spec）。
-  // builtin → 现状 5 模板（v1.2 R1 向后兼容）。
-  if (workflowKind === 'builtin') {
+  // v1.8-1 (ADR-0011 D1)：--builtin 显式标志触发 v1.7 行为（生成 5 件模板）。
+  // 默认不写 5 件模板（capDir 已被 mkdirSync 建好作为空 specs/<cap>/ 目录）。
+  if (builtin) {
     writeFileSync(join(changeDir, 'proposal.md'), fillTemplate(PROPOSAL_TEMPLATE, values), 'utf-8');
     writeFileSync(join(changeDir, 'design.md'), fillTemplate(DESIGN_TEMPLATE, values), 'utf-8');
     writeFileSync(join(changeDir, 'tasks.md'), fillTemplate(TASKS_TEMPLATE, values), 'utf-8');
@@ -331,9 +342,14 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
     ...(flags.capabilities ? { capabilities: flags.capabilities } : {}),
     next: 'edit proposal/design/tasks/spec — when stable, write execution-contract.md and advance to contracted',
   });
-  appendEvent(changeDir, `init: scaffolded ${basename(changeDir)} (layout=${layout}, workflow=${workflowKind}, capabilities=${next.capabilities ?? 'unset'}${parentSnapshot ? `, parent=${parentSnapshot.parent}` : ''})`);
+  appendEvent(changeDir, `init: scaffolded ${basename(changeDir)} (layout=${layout}, workflow=${workflowKind}, builtin=${builtin}, autoProbe=${autoProbe}, capabilities=${next.capabilities ?? 'unset'}${parentSnapshot ? `, parent=${parentSnapshot.parent}` : ''})`);
 
   stdout.write(`${changeDir}\n`);
   stdout.write(`next: edit proposal/design/tasks/specs — when stable, write execution-contract.md and advance to contracted\n`);
+  // v1.8-1 (ADR-0011 D2)：init 完成后自动调 probe，让 AI 立即看到导航推荐。
+  // --no-auto-probe 标志跳过（CI 用）；--builtin 模式跳过（v1.7 行为兼容）。
+  if (autoProbe && !builtin) {
+    await runProbe([changeDir], { stdout, stderr, cwd });
+  }
   return { exitCode: 0 };
 }

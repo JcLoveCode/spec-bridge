@@ -1,0 +1,7 @@
+- 2026-09-21T03:20:16.219Z init: scaffolded v1-8-1-bridge-as-navigator (layout=standalone, workflow=builtin, capabilities=unset)
+- 2026-09-21T03:30:04.432Z next: use_skill to-spec — spec already written to specs/v1-8-1-bridge-as-navigator/spec.md (frontmatter external:true). Next: write execution-contract.md and advance to contracted
+- 2026-09-21T03:30:04.618Z adopted external matt stack — spec synthesized via use_skill to-spec (manual state set, pre-v1.8-1)
+- 2026-09-21T03:30:14.051Z manual patch: external_stack + adopted_at added to .bridge.yaml (pre-v1.8-1 schema, will be formalized in v1.8-1 D3)
+- 2026-09-21T05:08:26.957Z stage: planning → contracted
+- 2026-09-21T05:08:34.204Z next: contract approved. Next: use_skill implement — implement C1-C12 hard constraints via TDD at CLI seam (exit code + .bridge.yaml + .bridge.log)
+- 2026-09-21T05:43:26.153Z stage: contracted → executing
