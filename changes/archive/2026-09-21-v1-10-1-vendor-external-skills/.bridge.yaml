@@ -1,0 +1,33 @@
+# .bridge.yaml — spec-bridge change state
+# Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
+
+# === Lifecycle ===
+stage: archived
+layout: standalone
+branch: null
+
+# === Workflow (v1.2) ===
+workflow_kind: superpowers
+parent: null
+parent_artifacts_hash: null
+
+# === Capabilities (probed once per change) ===
+capabilities: null
+tags: null
+
+# === Contract gate ===
+contract_approved: true
+artifacts_hash: sha256:edb2a795b90cbcd22a7f9903bee7a42e283faa33b9c0165e119af3c10355f6d1
+contract_hash: sha256:e02766868cc84998bf309cfbcaa9abcfca70daede9a1bfae069c809fcf4daead
+
+# === External stack (v1.8-1 ADR-0011 D3) ===
+external_stack: matt
+adopted_at: 2026-09-21T18:35:00Z
+
+# === Publication receipt (written by vendored sync) ===
+published: true
+spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1NjplZGIyYTc5NWI5MGNiY2QyMmE3Zjk5MDNiZWU3YTQyZTI4M2ZhYTMzYjljMDE2NWUxMTlhZjNjMTAzNTVmNmQxIiwiYmFzZWxpbmVfYmVmb3JlX2hhc2giOiJzaGEyNTY6ZWM0YjEzZThmZWIzMzdiOTY1ODI1ODEwMGJhY2E4ZTk1NWRhMjY4ZWJhZjY0NjlhZmM4NjU5NGJiYjdhMjM1MSIsImJhc2VsaW5lX2FmdGVyX2hhc2giOiJzaGEyNTY6ZWM0YjEzZThmZWIzMzdiOTY1ODI1ODEwMGJhY2E4ZTk1NWRhMjY4ZWJhZjY0NjlhZmM4NjU5NGJiYjdhMjM1MSIsImNhcGFiaWxpdGllcyI6WyJ2MS0xMC0xLXZlbmRvci1leHRlcm5hbC1za2lsbHMiXSwiZXh0ZXJuYWxfc2tpcCI6dHJ1ZSwiZXh0ZXJuYWxfc3RhY2siOiJtYXR0In0
+
+# === Resume ===
+next: use external stack skill (openspec-propose / matt to-spec / superpowers brainstorming) — when done, bridge archive entry
+last_event: memory sync FAILED: The "path" argument must be of type string. Received undefined

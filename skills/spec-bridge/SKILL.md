@@ -283,6 +283,31 @@ bridge stacks remove matt             # 删除并重新编号
 
 > **不路由的位置**：前置阶段（planning@builtin@openspec）由各自产物生成器接管，桥不必指；终态（archived/patching/abandoned）路由只读，不写执行槽位。
 
+### 6.1.1 Vendor 路径（v1.10+，断网可用）
+
+`bridge probe` 输出的 `advised_skill_path` 字段指向本仓库已 vendor 的外栈 SKILL.md——无需装 matt-skills 插件也能读：
+
+| use_skill 路径 | vendor 路径（断网可用） |
+|---|---|
+| `use_skill spec-executor` | `skills/external-matt/engineering/spec-executor/SKILL.md` |
+
+**规则**：
+- 仅当 advised_skill 为外栈且 vendor 内置时，probe 输出 `advised_skill_path` 字段
+- `openspec` / `superpowers` vendor 未内置，路径字段不输出（仅 use_skill）
+- `(none)` 兜底场景不输出路径（bridge 不写模板）
+
+**其他 vendor 能力**（不在 PROTOCOL_HINTS，但已 vendor，可在 §1.3 / §6.2 中按需手动调用）：
+
+| Skill | vendor 路径 |
+|---|---|
+| `to-spec` | `skills/external-matt/engineering/to-spec/SKILL.md` |
+| `to-tickets` | `skills/external-matt/engineering/to-tickets/SKILL.md` |
+| `to-goal` | `skills/external-matt/engineering/to-goal/SKILL.md` |
+| `goal-crafter` | `skills/external-matt/engineering/goal-crafter/SKILL.md` |
+| `execute-spec-in-fork` | `skills/external-matt/engineering/execute-spec-in-fork/SKILL.md` |
+
+vendor 来源、许可证、同步策略详见 `skills/external-matt/VENDOR.md`（ADR-0017）。
+
 ### 6.2 能力阶梯 v2（五级）
 
 `§2` 原三级（原生 → matt → 内置）升级为五级，按**槽位**补位不按栈整体降级：

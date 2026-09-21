@@ -12,7 +12,7 @@ spec-bridge 解决三个根问题。**先看这张实装状态表**，决定哪�
 | §1.1 桥（个人 + 团队 + 跨迭代保留） | v1.7+ 起实施 |
 | §1.1 a' 两层记忆规则 | **v1.8-3** 实装（ADR-0013） |
 | §1.2 导航员（路由到 superpowers / matt / openspec 三栈） | **v1.7** 实装（`bridge probe`） |
-| §1.3 跨 session 传递（to-goal 集成） | **v1.7+** 起实施 |
+| §1.3 跨 session 传递（to-goal 集成） | **v1.10** 实装（vendor 6 个核心 skill） |
 
 ### 1.1 桥：组织级跨人跨迭代汇总
 
@@ -68,7 +68,7 @@ bridge probe 主动识别你正在做什么（**对话层**，不是文件系统
 三件自带能力；TDD / SDD / root-cause / spec-execution 这类执行纪律由
 superpowers / matt / openspec 三家供。
 
-### 1.3 跨 session 传递（to-goal 集成，**v1.7+** 实装）
+### 1.3 跨 session 传递（to-goal 集成，**v1.10** vendor）
 
 把当前工作编译成 portable execution goal，可丢给：
 
@@ -76,7 +76,15 @@ superpowers / matt / openspec 三家供。
 - **另一个 agent**（Codex / Pi / Claude Code）
 - **另一个 session**（断电续作）
 
-**Goal block 六段**（来自 matt-skills `to-goal` skill）：
+**双路径访问**（v1.10 起）：
+
+- **vendor 路径**（断网可用）：`skills/external-matt/engineering/to-goal/SKILL.md`
+- **插件路径**（如装 matt-skills 插件）：`use_skill to-goal`
+
+`bridge probe` 在推荐 `to-goal` 时会同时输出 `advised_skill_path` 字段，AI 可二选一：
+调 `use_skill to-goal`（如插件装了）/ 直接读 vendor SKILL.md（断网可用）。
+
+**Goal block 五段**（来自 vendor `to-goal` skill）：
 
 | 段 | 内容 |
 |---|---|
@@ -95,8 +103,10 @@ superpowers / matt / openspec 三家供。
 - 例：authorization migration + concurrency → `Advanced + High`
 - 例：复制既有模式的小改 → `Lightweight + Low`（**用小模型省 token**）
 
-bridge 不重新发明 to-goal——直接抄过来，完整内容见
-`skills/spec-bridge/skills/to-goal/SKILL.md`。
+bridge 不重新发明 to-goal——直接 vendor 自 [tt-a1i/matt-skills-with-to-goal](https://github.com/tt-a1i/matt-skills-with-to-goal)，
+许可证与同步策略详见 [`skills/external-matt/VENDOR.md`](./skills/external-matt/VENDOR.md)。
+
+同时 vendor 的核心能力：to-spec / to-tickets / to-goal / goal-crafter / spec-executor / execute-spec-in-fork（详见 §6.1.1）。
 
 ## 2. 实现（v1.x 现在提供的）
 

@@ -51,6 +51,20 @@ function skillToInvocation(advisedSkill) {
   return `use_skill ${advisedSkill}`;
 }
 
+// v1.10-1 (ADR-0017 D3)：advised_skill → vendor 内置 SKILL.md 路径映射。
+// 规则：仅当 advised_skill 为外栈且 vendor 内置时返回路径；否则 null。
+// 路径是仓库内相对路径，断网可用（用户可直接 cat 读文件）。
+function pathForAdvisedSkill(advisedSkill) {
+  if (advisedSkill === '(none)') return null;
+  const lower = advisedSkill.toLowerCase();
+  if (lower.includes('matt') || lower.includes('to-spec')) {
+    return 'skills/external-matt/engineering/to-spec/SKILL.md';
+  }
+  if (lower.includes('openspec') || lower.includes('propose')) return null; // vendor 未内置
+  if (lower.includes('superpowers') || lower.includes('tdd')) return null; // vendor 未内置
+  return null;
+}
+
 function routeSkill(inventory) {
   const lower = inventory.map((s) => s.toLowerCase());
   for (const skill of lower) {
@@ -171,6 +185,11 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   stdout.write(`advised_skill: ${routed.advised_skill}\n`);
   stdout.write(`advised_reason: ${routed.advised_reason}\n`);
   stdout.write(`advised_invocation: ${skillToInvocation(routed.advised_skill)}\n`);
+  // v1.10-1 (ADR-0017 D3)：vendor 内置 SKILL.md 路径输出（断网可用，AI 可直接 cat）
+  const advisedSkillPath = pathForAdvisedSkill(routed.advised_skill);
+  if (advisedSkillPath) {
+    stdout.write(`advised_skill_path: ${advisedSkillPath}\n`);
+  }
   stdout.write(`next_hint: ${next_hint}\n`);
   stdout.write(`stack_hint: ${stackHint}\n`);
   stdout.write(`last_used: ${lastUsed}\n`);

@@ -1,0 +1,6 @@
+- 2026-09-21T14:20:51.833Z init: scaffolded v1-10-1-vendor-external-skills (layout=standalone, workflow=superpowers, autoProbe=true, capabilities=unset)
+- 2026-09-21T14:27:01.359Z stage: planning → contracted
+- 2026-09-21T14:33:01.693Z sync: --external-skip → real receipt for matt (no baseline write; verify will pass)
+- 2026-09-21T14:33:21.881Z distill: skipped (external_stack=matt)
+- 2026-09-21T14:33:45.552Z stage: contracted → archived
+- 2026-09-21T14:33:45.558Z memory sync FAILED: The "path" argument must be of type string. Received undefined
