@@ -13,7 +13,7 @@
 ## 业务目的（**先读**，所有代码设计都按这个走）
 
 - **a. 桥** — 跨人跨迭代汇总（个人 + 团队两层），v1.7+ 实施
-- **a'.** CodeBuddy memory 等价骨架（探测 + 按需补），**v1.8** 起独立 change 实装
+- **a'. 两层记忆规则** — 个人层（IDE memory 优先 + fallback bridge 空骨架）+ 团队层（archive 触发 sync + hash 校验 + cap 边界 + orphaned 沉淀），**v1.8-3** 实装（ADR-0013）
 - **b. 导航员** — 主动识别对话层意图，路由到三栈具体 skill，**v1.7** 实装（`bridge probe`）
 - **c. to-goal** — 跨 session 传递工作，**v1.7+** 实施
 
@@ -32,6 +32,7 @@
 3. **不要**改 4 个 receipt 字段名（`artifacts_hash / contract_hash / published / spec_publication_receipt`）——`cross_refs` 字段是 **v1.8** 才开；`external_stack` / `adopted_at` 字段在 v1.8-1 起允许；`workflow_kind` 值域在 v1.8-2 扩为 `{superpowers, openspec, matt, builtin}`。
 4. **不要**动 schema 不写 spec——任何 schema 改动必须先开 change（`changes/<name>/`）走 SDD 流程。
 5. **不要**为 to-goal 写新引擎——直接 vendor 抄过来，完整内容见 matt-skills `to-goal` skill。
+6. **不要**替 AI 写 memory 内容——bridge 只填骨架结构和元信息（`generated_by`），不总结决策 / 写 why / 写实现细节。AI 是决策者，bridge 是档案员（v1.8-3 / ADR-0013）。
 
 ## CLI 速查（13 条主线）
 

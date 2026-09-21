@@ -192,6 +192,31 @@ node <bridge> hashes <change-dir> --check   # 漂移 → 停，回到 contracted
 - 不匹配的对话输入不碰状态文件（惰性原则）
 - 不 push、不开 PR、不动 issue tracker，除非用户显式要求
 
+### 4.5 写 memory 的硬约束（v1.8-3 / ADR-0013）
+
+bridge 只填 memory 骨架结构和元信息（`generated_by`），**不替 AI 写 memory 内容**。AI 写 memory 时必须遵循：
+
+**✅ 好示例**（每行必带 why）：
+- `v1.8.3: 砍 --builtin flag 因为纯桥模式不需要逃生口`
+- `v1.6: init 加 detectLayout 因为项目根有 openspec/ 时不该默认 builtin`
+- `v1.5: sync 改 vendored 引擎因为 prompt 不该现场合并文本（ADR-0001）`
+
+**❌ 坏示例**（没 why / 流水账 / 操作日志）：
+- `改了 cmd-init.mjs 加 detectIdeMemory`（没 why，只说了"改了什么"）
+- `2026-09-21 13:00 修复 bug`（流水账，没说修了什么 bug、为什么修）
+- `新增 memory-detect-ide.test.mjs 3 个测试`（操作日志，测试是手段不是决策）
+- `bridge 现在支持 IDE memory 探测了`（陈述事实，没说为什么要探测）
+
+**推荐格式**：`vX.Y.Z: 砍/加/改 X 因为 Y`（版本 + 动作 + 对象 + 原因）
+
+**写入位置**：
+- 个人层：`.codebuddy/memory/` (IDE) 或 `changes/<name>/memory.md` §1 决策段
+- 团队层：`.bridge/team/<cap>/memory.md`（由 `bridge memory sync` 自动同步，AI 不直接写）
+
+**bridge 的职责边界**：
+- ✅ bridge 做：探测 IDE memory、生成空骨架、sync 算 hash、reconcile 合并
+- ❌ bridge 不做：替 AI 总结决策、写 why、写实现细节、写测试场景
+
 ## 5. 命令速查
 
 | 命令 | 用途 |
@@ -316,3 +341,30 @@ CodeBuddy 自身的 `memory`（`.codebuddy/memory/`）也是同理——日常 b
 **v1.8-2 schema 变化**：仅 `workflow_kind` 值域扩为 4 个（**不是字段名变更**，值域扩允许）；字段本身仍叫 `workflow_kind`，旧值兼容。
 
 **回归保护**：`init-auto-probe.test.mjs B3 T1` + `init-workflow-kind.test.mjs R3 场景 3` 都改测 "`--builtin` flag no-op + stderr hint"——未来有人加回 `--builtin` 行为会立刻 fail。
+
+### v1.8-3 CHANGELOG（ADR-0013，memory-personal-team）
+
+**核心叙事**：bridge 拥有"两层记忆"——个人层（探测 IDE 自带 memory 优先 + fallback 在 change 下建空骨架）+ 团队层（archive 触发 CLI 同步 + hash 校验 + cap 边界 + orphaned 沉淀）。bridge 只填结构和元信息，**不替 AI 写 memory 内容**。
+
+- **D1 个人层 IDE 优先**：探测 `.codebuddy/memory/` 在场跳过生成 `changes/<name>/memory.md`；不在场 → 生成空骨架（§0 元信息 + §1 决策段 + §2 卡住 + §3 父继承）
+- **D2 probe 输出 memory_hint**：三态 `personal: "ide"|"bridge"|"none"` + IDE 路径/行数 + bridge 路径/行数 + `team_caps` 列表 + `team_total_lines`
+- **D3 memory 命令族 5 子命令**：
+  - `bridge memory init <dir>` — 生成空骨架（已存在 no-op）
+  - `bridge memory append <dir> --text "<text>" [--section §1|§2|§3]` — 追加一行 + appendEvent
+  - `bridge memory sync <dir>` — 个人层→团队层同步（hash 校验 + 不一致追加）
+  - `bridge memory show [<change>|<cap>]` — 纯读，不改文件
+  - `bridge memory reconcile [--team] [--cap <cap>] [--include-orphaned]` — 人审合并
+- **D4 archive-ready 守门**：IDE 在场或个人 memory 有内容通过；都缺 → exit 1 + stderr 引导
+- **D5 archive 触发 sync**：`bridge state set stage archived` 时自动调 `bridge memory sync <changeDir>`；失败 → stderr `[warn]` 不回滚 archive
+- **D6 团队层 cap 边界**：按 `.bridge.yaml.capabilities` 落 `.bridge/team/<cap>/memory.md`；空或多 cap 不一致 → 落 `orphaned/<change-id>.md`
+- **D7 reconcile 不删原 cap**：只追加"reconcile YYYY-MM-DD by <actor>"元信息 + 标记冲突；`--include-orphaned` 合并 orphaned 到正式 cap
+- **D8 写规则硬约束**：SKILL.md §4.5 好/坏示例 + AGENTS.md 禁止事项 §3 加"不替 AI 写 memory 内容"
+
+**测试**：174/174 全绿（v1.8-3 新加 31 测试）
+
+**为什么是"两层记忆"**：
+- 个人层解决"在哪记决策 why"——IDE memory 优先（零配置），fallback 到 change 下
+- 团队层解决"跨 change 演进脉络"——每次 archive 同步个人层决策到 team/<cap>/，hash 校验避免重复
+- 写规则硬约束解决"AI 写流水账"——每行必带 why，推荐格式 `vX.Y.Z: 砍 X 因为 Y`
+
+**v1.8-3 schema 变化**：无字段名变更；probe 输出加 `memory_hint` 字段（AI 可见，不写 `.bridge.yaml`）。

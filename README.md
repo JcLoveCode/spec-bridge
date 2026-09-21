@@ -10,7 +10,7 @@ spec-bridge 解决三个根问题。**先看这张实装状态表**，决定哪�
 | 业务目的 | 实装状态 |
 |---|---|
 | §1.1 桥（个人 + 团队 + 跨迭代保留） | v1.7+ 起实施 |
-| §1.1 a' CodeBuddy memory 等价骨架 | **v1.8** 起独立 change |
+| §1.1 a' 两层记忆规则 | **v1.8-3** 实装（ADR-0013） |
 | §1.2 导航员（路由到 superpowers / matt / openspec 三栈） | **v1.7** 实装（`bridge probe`） |
 | §1.3 跨 session 传递（to-goal 集成） | **v1.7+** 起实施 |
 
@@ -23,16 +23,31 @@ bug 修复记录、版本迭代设计——汇总成两层：
 - **团队层**：团队公用业务总纲。位置：`bridge team/<capability>/summary.md`（v1.7+ 实施）
 - **跨迭代保留**：你的个人产物变了，团队总纲跟着重新汇总
 
-#### a' CodeBuddy memory 等价骨架（**v1.8** 起独立 change 实装）
+#### a' 两层记忆规则（**v1.8-3** 实装 / ADR-0013）
 
-bridge 探测项目下 `.codebuddy/memory/` 是否存在：
+bridge 拥有"两层记忆"——**个人层**（探测 IDE 自带 memory 优先 + fallback 在 change 下建空骨架）+ **团队层**（archive 触发 CLI 同步 + hash 校验 + cap 边界 + orphaned 沉淀）。
+
+**个人层**（零配置探测）：
 
 | 探测结果 | bridge 行为 |
 |---|---|
-| 不存在 | bridge 按 codebuddy memory 同结构补一份：`.codebuddy/memory/YYYY-MM-DD.md` + `MEMORY.md` |
-| 已存在 | bridge **不写**，避免与 IDE 填的 memory 冲突 |
+| `.codebuddy/memory/` 存在 | bridge **不写**个人 memory，probe 输出 `memory_hint.personal = "ide"` + 路径 + 行数 |
+| `.codebuddy/memory/` 不存在 | bridge 生成空骨架 `changes/<name>/memory.md`（§0 元信息 + §1 决策段 + §2 卡住 + §3 父继承） |
 
-桥的 a' **不重复生成**——以 codebuddy memory 为准。
+**团队层**（archive 触发同步）：
+
+- **触发时机**：`bridge state set stage archived` 时自动调 `bridge memory sync <changeDir>`
+- **同步算法**：读个人层 §1 决策段 → 计算 sha256 → 按 `.bridge.yaml.capabilities` 落 `.bridge/team/<cap>/memory.md`
+- **hash 校验**：hash 一致 no-op；hash 不一致追加决策段 + 更新 `last_synced_hash`
+- **orphaned 沉淀**：capabilities 空或多 cap 不一致 → 落 `.bridge/team/orphaned/<change-id>.md`（人审后 reconcile 合并）
+
+**写规则硬约束**（SKILL.md §4.5）：
+
+- ✅ 好示例：`v1.8.3: 砍 --builtin flag 因为纯桥模式不需要逃生口`
+- ❌ 坏示例：`改了 cmd-init.mjs 加 detectIdeMemory`（没 why）
+- ❌ 坏示例：`2026-09-21 13:00 修复 bug`（流水账）
+
+**bridge 的职责边界**：bridge 只填骨架结构和元信息（`generated_by`），**不替 AI 写 memory 内容**。AI 是决策者，bridge 是档案员。
 
 ### 1.2 导航员：把你路由到正确的工具栈能力
 
