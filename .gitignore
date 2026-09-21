@@ -9,4 +9,4 @@ node_modules/
 openspec/
 
 # IDE plugin local checkout (OpenSpec skill 副本，本地副产物)
-.codebuddy/
+.codebuddy/.idea/
