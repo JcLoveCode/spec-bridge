@@ -2,7 +2,7 @@
 # Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
 
 # === Lifecycle ===
-stage: executing
+stage: archived
 layout: standalone
 branch: null
 
@@ -26,4 +26,4 @@ spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1Njo2MzUxOG
 
 # === Resume ===
 next: edit proposal/design/tasks/spec — when stable, write execution-contract.md and advance to contracted
-last_event: distill: why.md written to specs/v1-7-probe-active-navigator/why.md (8 decisions)
+last_event: stage: executing → archived
