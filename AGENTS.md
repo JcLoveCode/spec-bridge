@@ -29,7 +29,7 @@
 
 1. **不要**让 LLM 现场合并文本——所有合并走 `bridge sync / verify`。
 2. **不要**给 bridge 增加 a/b/c 以外的能力——超出的能力属于下游 tool / 上游 plugin（如 OpenSpec / Matt / Superpowers）。
-3. **不要**改 4 个 receipt 字段名（`artifacts_hash / contract_hash / published / spec_publication_receipt`）——`cross_refs` 字段是 **v1.8** 才开。
+3. **不要**改 4 个 receipt 字段名（`artifacts_hash / contract_hash / published / spec_publication_receipt`）——`cross_refs` 字段是 **v1.8** 才开；`external_stack` / `adopted_at` 字段在 v1.8-1 起允许；`workflow_kind` 值域在 v1.8-2 扩为 `{superpowers, openspec, matt, builtin}`。
 4. **不要**动 schema 不写 spec——任何 schema 改动必须先开 change（`changes/<name>/`）走 SDD 流程。
 5. **不要**为 to-goal 写新引擎——直接 vendor 抄过来，完整内容见 matt-skills `to-goal` skill。
 

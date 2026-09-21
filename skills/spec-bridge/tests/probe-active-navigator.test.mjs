@@ -69,14 +69,15 @@ test('R2 场景 3：inventory 只含 openspec → 路由到 openspec', () => {
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
-test('R2 场景 4：inventory 空 → 兜底 (none)', () => {
+test('R2 场景 4（v1.8-2 纯桥）：inventory 空 → 兜底 (none) + 新文案引导 brainstorming', () => {
   const root = makeSandbox();
   try {
     bridge(['init', 'demo'], root);
     const result = bridge(['probe', 'changes/demo'], root);
     assert.equal(result.status, 0);
     assert.match(result.stdout, /^advised_skill: \(none\)$/m);
-    assert.match(result.stdout, /^advised_reason: .*优先级 4/m);
+    // v1.8-2 (ADR-0012 D4)：fallback reason 改为引导 brainstorming/自由发挥
+    assert.match(result.stdout, /bridge 不写模板，请 AI 用 brainstorming 或直接编辑自由发挥/);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 

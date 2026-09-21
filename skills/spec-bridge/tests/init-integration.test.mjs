@@ -22,29 +22,38 @@ function bridge(args, cwd) {
   return spawnSync(process.execPath, [BRIDGE, ...args], { cwd, encoding: 'utf-8' });
 }
 
-test('R1 场景 1.1 + 1.4：成功脚手架 standalone change（5 文件 + state + log + stdout 路径）', () => {
+test('R1 场景 1.1 + 1.4（v1.8-2 纯桥）：成功脚手架 standalone change（仅 state + log + 空 specs/）', () => {
   const root = makeSandbox(true);
   try {
-    const result = bridge(['init', 'demo-feature', '--branch', 'REQ-42', '--builtin'], root);
+    // v1.8-2 (ADR-0012 D1)：纯桥模式——不传 --builtin（默认）；验证只建台账，不写 5 件模板。
+    const result = bridge(['init', 'demo-feature', '--branch', 'REQ-42', '--no-auto-probe'], root);
     assert.equal(result.status, 0, `stderr: ${result.stderr}`);
     const changeDir = join(root, 'changes', 'demo-feature');
+    // v1.8-2 纯桥：5 件模板都不存在
     for (const file of ['proposal.md', 'design.md', 'tasks.md', 'execution-contract.md']) {
-      assert.ok(existsSync(join(changeDir, file)), `${file} 应存在`);
-      assert.ok(readFileSync(join(changeDir, file), 'utf-8').trim().length > 0, `${file} 应非空`);
+      assert.ok(!existsSync(join(changeDir, file)), `${file} 必须不存在（纯桥模式）`);
     }
-    // D4：默认 capability = 目录名
+    // spec.md 不存在（空 specs/ 目录等外栈产物生成器填）
     const specFile = join(changeDir, 'specs', 'demo-feature', 'spec.md');
-    assert.ok(existsSync(specFile), 'specs/<默认cap>/spec.md 应存在');
+    assert.ok(!existsSync(specFile), 'spec.md 必须不存在（外栈自管）');
+    // 台账在场
+    assert.ok(existsSync(join(changeDir, '.bridge.yaml')), '.bridge.yaml 应存在');
+    assert.ok(existsSync(join(changeDir, '.bridge.log')), '.bridge.log 应存在');
+    // specs/<cap>/ 目录在场（空）
+    assert.ok(existsSync(join(changeDir, 'specs', 'demo-feature')), 'specs/<cap>/ 应存在');
+    // 验证 .bridge.yaml 内容
     const state = readFileSync(join(changeDir, '.bridge.yaml'), 'utf-8');
     assert.match(state, /stage: planning/);
     assert.match(state, /layout: standalone/);
     assert.match(state, /branch: REQ-42/);
+    // v1.8-2：appendEvent 不再含 builtin= 字段
     const log = readFileSync(join(changeDir, '.bridge.log'), 'utf-8');
     assert.match(log, /init: scaffolded demo-feature/);
-    // D7：stdout 首行含 change 路径，第二行是 next hint
+    assert.ok(!log.includes('builtin=true'), 'appendEvent 不应含 builtin=true（v1.8-2 纯桥）');
+    // D7：stdout 首行含 change 路径，第二行是 next hint（v1.8-2 新文案）
     const [firstLine, secondLine] = result.stdout.trim().split('\n');
     assert.ok(firstLine.includes('demo-feature'), `stdout 首行应含 change 路径，实际: ${firstLine}`);
-    assert.match(secondLine, /^next: /);
+    assert.match(secondLine, /^next: use external stack skill — bridge doesn't write templates/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -161,12 +170,14 @@ test('R3（修正后语义）：非 git 且无 changes/ 祖先 → cwd 兜底 + 
   }
 });
 
-test('D4：--capability 覆盖默认 capability 目录名', () => {
+test('D4（v1.8-2 纯桥）：--capability 覆盖默认 capability 目录名（空 specs/<cap>/）', () => {
   const root = makeSandbox(true);
   try {
-    const result = bridge(['init', 'demo-feature', '--capability', 'cli', '--builtin'], root);
+    // v1.8-2 纯桥：不传 --builtin，验证 --capability 覆盖目录名 + specs/<cap>/ 目录在场但空
+    const result = bridge(['init', 'demo-feature', '--capability', 'cli', '--no-auto-probe'], root);
     assert.equal(result.status, 0, `stderr: ${result.stderr}`);
-    assert.ok(existsSync(join(root, 'changes', 'demo-feature', 'specs', 'cli', 'spec.md')), 'spec 应落在 --capability 指定目录');
+    assert.ok(existsSync(join(root, 'changes', 'demo-feature', 'specs', 'cli')), 'specs/<cap>/ 应存在（纯桥模式建空目录）');
+    assert.ok(!existsSync(join(root, 'changes', 'demo-feature', 'specs', 'cli', 'spec.md')), 'spec.md 必须不存在（外栈自管）');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

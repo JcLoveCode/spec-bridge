@@ -10,12 +10,13 @@ import { run as runProbe } from './cmd-probe.mjs';
 
 const KEBAB_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const MAX_WALENCH = 10;
-// v1.2 (ADR-0004/D1)：workflow_kind 合法值域。
-const WORKFLOW_KINDS = new Set(['openspec', 'matt', 'builtin']);
+// v1.2 (ADR-0004/D1)：workflow_kind 合法值域。v1.8-2 (ADR-0012 D3) 扩为 4 个值。
+const WORKFLOW_KINDS = new Set(['superpowers', 'openspec', 'matt', 'builtin']);
 
 // v1.2 (ADR-0004/D1)：四级推导——显式 --workflow-kind > --capabilities 首值（须在值域内）> 项目栈探测 > builtin。
 // 返回 null 表示显式给了非法值（调用方报错 exit 2）。
 // v1.8-1 (ADR-0011 D2)：第 4 级 fallback 从硬编码 'builtin' 改成 `detectedPrimary`（detect-stack.mjs 输出）。
+// v1.8-2 (ADR-0012 D2)：detectedPrimary 可能是 'superpowers'（detect-stack 新优先级）；builtin 兜底仍然存在。
 function deriveWorkflowKind(flags, detectedPrimary = 'builtin') {
   if (flags['workflow-kind']) {
     return WORKFLOW_KINDS.has(flags['workflow-kind']) ? flags['workflow-kind'] : null;
@@ -27,140 +28,12 @@ function deriveWorkflowKind(flags, detectedPrimary = 'builtin') {
   return detectedPrimary;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 模板常量（D2）。改模板改代码，hash 不盖模板（D2 + D5）。
-// 占位符：
-//   {{NAME}}           — change 目录名
-//   {{CAP}}            — capability 名（默认 = 目录名小写化）
-//   {{CAP_PASCAL}}     — capability 名 PascalCase（仅 demo 占位，不影响 spec 解析）
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const PROPOSAL_TEMPLATE = `# Change: {{NAME}}
-
-## Why
-
-<!-- 问题一句话：为什么要做这个变更？现在的痛是什么？ -->
-
-## What Changes
-
-<!-- 改变什么：新增 / 修改 / 删除 / 重命名。简短列点即可。 -->
-
-## Scope
-
-### In Scope
-
-<!-- 本变更包含哪些工作 -->
-
-### Out of Scope
-
-<!-- 明确不做的（防止范围蔓延）。每条都是主动选择，不是遗忘。 -->
-`;
-
-export const DESIGN_TEMPLATE = `# Design: {{NAME}}
-
-## Purpose
-
-<!-- 简述设计意图。这一节是 why 蒸馏的次级源（## Decisions 才是主源）。 -->
-
-## Architecture
-
-<!-- 可选。架构图 / 数据流图 / 组件清单。 -->
-
-## Decisions
-
-<!-- 唯一权威源。每条决策包含：选项 / 决定 / 理由。这是后面 why 蒸馏的唯一依据。 -->
-
-### D1 — <决策名>
-
-**选项**：...
-**决定**：...
-**理由**：...
-
-## Out-of-scope decisions（明确不做的）
-
-<!-- 与 proposal §Out of Scope 呼应；这里强调"为什么不做"。 -->
-
-## Risks & Mitigations
-
-| 风险 | 影响 | 缓解 |
-|---|---|---|
-| ... | ... | ... |
-`;
-
-export const TASKS_TEMPLATE = `# Tasks: {{NAME}}
-
-按 [executor-protocol](../../skills/spec-bridge/references/executor-protocol.md) 的"自动启发式"排成批次；每批 ≤2 任务时 inline，否则派发子代理。
-
-## Batch 1 — <批名>
-
-- [ ] **T1.1** <任务>
-- [ ] **T1.2** <任务>
-
-完成定义：<可验证的收尾标准>
-审查时点：<批末>
-
-## Batch 2 — <批名>
-
-- [ ] **T2.1** ...
-
-完成定义：...
-
-## Batch N — 归档
-
-- [ ] **TN.1** \`node bridge.mjs sync changes/{{NAME}}\` → 写回执
-- [ ] **TN.2** \`node bridge.mjs verify changes/{{NAME}}\` → PASS
-- [ ] **TN.3** 写 \`specs/{{CAP}}/why.md\`（蒸馏）
-- [ ] **TN.4** \`git mv changes/{{NAME}} changes/archive/<YYYY-MM-DD>-{{NAME}}/\`
-- [ ] **TN.5** commit + push {{NAME}} 分支
-`;
-
-export const SPEC_TEMPLATE = `## Purpose
-
-<!-- 一句话说明本 capability 的存在意义。vendored 引擎对 NEW baseline 缺 Purpose 会自动套默认值，但显式写出更利于阅读。 -->
-
-## ADDED Requirements
-
-### Requirement: <需求名>
-
-The system SHALL <行为>.
-
-#### Scenario: <场景名>
-
-- **WHEN** <前置>
-- **THEN** <可观察结果>
-`;
-
-export const CONTRACT_TEMPLATE = `# Execution Contract: {{NAME}}
-
-## Intent Lock
-
-<!-- 一句话：问题 + 要改变什么。来自 proposal §Why + §What Changes。 -->
-
-## Scope Fence
-
-### In Scope
-<!-- 来自 proposal §Scope > ### In Scope -->
-
-### Out of Scope
-<!-- 来自 proposal §Scope > ### Out of Scope -->
-
-## Approved Requirements
-
-<!-- 映射自 specs/{{CAP}}/spec.md。每条 SHALL/MUST 必须有一条测试义务 + 落进至少一个 Batch。 -->
-- [ ] **R1** — <需求名>：<一行行为>（测试义务：<怎么验>）
-
-## Constraints
-
-<!-- 唯一权威源：design.md ## Decisions。每条 C 编号对到 D 编号。 -->
-
-## Execution Batches
-
-<!-- 来源：tasks.md。每批 — 任务号们 — 完成定义 — 审查时点。 -->
-
-## Escalation Rules
-
-<!-- 执行过程中遇到哪些情况必须停下回 planning 重开。 -->
-`;
+// v1.8-2 (ADR-0012 D1)：5 件模板常量与 fillTemplate 函数已删除——bridge init 不再写任何 spec 模板。
+// spec 产物（proposal/design/tasks/spec/execution-contract）由用户自己用外栈 skill 生成：
+//   • openspec-propose skill（openspec 栈项目）
+//   • matt to-spec skill（matt 栈项目）
+//   • superpowers brainstorming skill（superpowers 栈项目）
+//   • AI 直接编辑（无外栈时，按 probe fallback 文案引导）
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 项目根探测（D6）。git toplevel 优先 → 向上 walk 含 changes/ 的祖先 → fallback cwd。
@@ -249,15 +122,12 @@ function parseArgs(rawArgs) {
   return { positional, flags };
 }
 
-function fillTemplate(template, values) {
-  return template.replace(/\{\{(\w+)\}\}/g, (match, key) => (values[key] ?? match));
-}
-
 export async function run(args, { stdout = process.stdout, stderr = process.stderr, cwd = process.cwd() } = {}) {
   const { positional, flags } = parseArgs(args);
 
   if (positional.length === 0) {
-    stderr.write('Usage: bridge init <name> [--capability <cap>] [--branch <branch>] [--layout <standalone|openspec>] [--capabilities <comma,list>] [--workflow-kind <openspec|matt|builtin>] [--parent <archived-change-id>] [--builtin] [--no-auto-probe]\n');
+    // v1.8-2 (ADR-0012 D1)：--builtin flag 已砍（纯桥模式），usage 不再列出。
+    stderr.write('Usage: bridge init <name> [--capability <cap>] [--branch <branch>] [--layout <standalone|openspec>] [--capabilities <comma,list>] [--workflow-kind <superpowers|openspec|matt|builtin>] [--parent <archived-change-id>] [--no-auto-probe]\n');
     return { exitCode: 2 };
   }
 
@@ -268,8 +138,11 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   }
 
   // v1.8-1 (ADR-0011 D1)：默认行为变 — 只建台账（不生成 5 件模板）。
-  // --builtin 强制 v1.7 旧行为（向后兼容逃生口）；--no-auto-probe 跳过默认自动 probe。
-  const builtin = flags.builtin === 'true';
+  // v1.8-2 (ADR-0012 D1)：纯桥模式 — init 永远不写模板（--builtin 砍掉），--no-auto-probe 跳过默认自动 probe。
+  // v1.8-2 (ADR-0012 D1 兼容层）：老用户传 --builtin flag 时给 stderr 提示后忽略。
+  if (flags.builtin === 'true') {
+    stderr.write(`[hint] --builtin flag removed in v1.8-2 (pure bridge mode), no-op\n`);
+  }
   const noAutoProbe = flags['no-auto-probe'] === 'true';
   const autoProbe = !noAutoProbe;
 
@@ -288,9 +161,10 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   const layout = flags.layout || detectedLayout.layout;
 
   // workflowKind 派生（flags > capabilities > 项目栈探测 > builtin）；非法显式值报错 exit 2。
+  // v1.8-2 (ADR-0012 D3)：值域扩为 4 个（superpowers/openspec/matt/builtin）；非法值报错同步。
   const workflowKind = deriveWorkflowKind(flags, stackDetection.primary);
   if (workflowKind === null) {
-    stderr.write(`invalid --workflow-kind '${flags['workflow-kind']}' — must be one of: openspec, matt, builtin\n`);
+    stderr.write(`invalid --workflow-kind '${flags['workflow-kind']}' — must be one of: superpowers, openspec, matt, builtin\n`);
     return { exitCode: 2 };
   }
   const changesDir = layout === 'openspec'
@@ -319,17 +193,8 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   }
 
   mkdirSync(capDir, { recursive: true });
-  const values = { NAME: name, CAP: flags.capability || defaultCapability(name) };
-
-  // v1.8-1 (ADR-0011 D1)：--builtin 显式标志触发 v1.7 行为（生成 5 件模板）。
-  // 默认不写 5 件模板（capDir 已被 mkdirSync 建好作为空 specs/<cap>/ 目录）。
-  if (builtin) {
-    writeFileSync(join(changeDir, 'proposal.md'), fillTemplate(PROPOSAL_TEMPLATE, values), 'utf-8');
-    writeFileSync(join(changeDir, 'design.md'), fillTemplate(DESIGN_TEMPLATE, values), 'utf-8');
-    writeFileSync(join(changeDir, 'tasks.md'), fillTemplate(TASKS_TEMPLATE, values), 'utf-8');
-    writeFileSync(join(capDir, 'spec.md'), fillTemplate(SPEC_TEMPLATE, values), 'utf-8');
-    writeFileSync(join(changeDir, 'execution-contract.md'), fillTemplate(CONTRACT_TEMPLATE, values), 'utf-8');
-  }
+  // v1.8-2 (ADR-0012 D1)：纯桥模式——bridge init 永远不写 proposal/design/tasks/spec/execution-contract。
+  // spec 产物由用户自己用外栈 skill 生成（openspec-propose / matt to-spec / superpowers brainstorming）。
 
   // 初始化 .bridge.yaml + 第一条大事记（D5：仅写状态，不写 hash / 回执）。
   const next = writeState(changeDir, {
@@ -340,15 +205,16 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
     ...(parentSnapshot ? { parent: parentSnapshot.parent, parent_artifacts_hash: parentSnapshot.hash } : {}),
     ...(flags.branch ? { branch: flags.branch } : {}),
     ...(flags.capabilities ? { capabilities: flags.capabilities } : {}),
-    next: 'edit proposal/design/tasks/spec — when stable, write execution-contract.md and advance to contracted',
+    // v1.8-2 (ADR-0012 D1)：next 字段文案同步——不再引导编辑 5 件模板，引导用外栈 skill。
+    next: 'use external stack skill (openspec-propose / matt to-spec / superpowers brainstorming) — when done, bridge archive entry',
   });
-  appendEvent(changeDir, `init: scaffolded ${basename(changeDir)} (layout=${layout}, workflow=${workflowKind}, builtin=${builtin}, autoProbe=${autoProbe}, capabilities=${next.capabilities ?? 'unset'}${parentSnapshot ? `, parent=${parentSnapshot.parent}` : ''})`);
+  appendEvent(changeDir, `init: scaffolded ${basename(changeDir)} (layout=${layout}, workflow=${workflowKind}, autoProbe=${autoProbe}, capabilities=${next.capabilities ?? 'unset'}${parentSnapshot ? `, parent=${parentSnapshot.parent}` : ''})`);
 
   stdout.write(`${changeDir}\n`);
-  stdout.write(`next: edit proposal/design/tasks/specs — when stable, write execution-contract.md and advance to contracted\n`);
+  stdout.write(`next: use external stack skill — bridge doesn't write templates (pure bridge mode)\n`);
   // v1.8-1 (ADR-0011 D2)：init 完成后自动调 probe，让 AI 立即看到导航推荐。
-  // --no-auto-probe 标志跳过（CI 用）；--builtin 模式跳过（v1.7 行为兼容）。
-  if (autoProbe && !builtin) {
+  // v1.8-2 (ADR-0012 D1)：--no-auto-probe 标志跳过（CI 用）。
+  if (autoProbe) {
     await runProbe([changeDir], { stdout, stderr, cwd });
   }
   return { exitCode: 0 };

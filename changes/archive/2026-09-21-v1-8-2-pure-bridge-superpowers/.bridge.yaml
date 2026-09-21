@@ -1,0 +1,33 @@
+# .bridge.yaml — spec-bridge change state
+# Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
+
+# === Lifecycle ===
+stage: archived
+layout: standalone
+branch: null
+
+# === Workflow (v1.2) ===
+workflow_kind: builtin
+parent: null
+parent_artifacts_hash: null
+
+# === Capabilities (probed once per change) ===
+capabilities: pure-bridge,superpowers-detection
+tags: null
+
+# === Contract gate ===
+contract_approved: null
+artifacts_hash: null
+contract_hash: null
+
+# === External stack (v1.8-1 ADR-0011 D3) ===
+external_stack: null
+adopted_at: null
+
+# === Publication receipt (written by vendored sync) ===
+published: true
+spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1Njo2NWNjNTEyNTJmN2MwZGJjY2NmMzIxZDE5MjdlYTQ1MDlmYWE1Nzc2N2ZhOTI1MGRjMzgwZDM5NGQyMDNkNjRkIiwiYmFzZWxpbmVfYmVmb3JlX2hhc2giOiJzaGEyNTY6MWMxMjgwM2NmZTUxZDNmZjQzZjY2ZmJlOGU1OWEwYjAyMWFlOGZmYjNlODc5MzMyZDVjMGEwMDhjMzJkZGRkNSIsImJhc2VsaW5lX2FmdGVyX2hhc2giOiJzaGEyNTY6MWMxMjgwM2NmZTUxZDNmZjQzZjY2ZmJlOGU1OWEwYjAyMWFlOGZmYjNlODc5MzMyZDVjMGEwMDhjMzJkZGRkNSIsImNhcGFiaWxpdGllcyI6WyJ2MS04LTItcHVyZS1icmlkZ2Utc3VwZXJwb3dlcnMiXX0
+
+# === Resume ===
+next: null
+last_event: stage: planning → archived

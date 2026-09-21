@@ -56,13 +56,21 @@ describe('B6 distill-skip-external（C10）', () => {
   test('B6 T2: builtin change 调 distill → 正常写 why.md（外部栈跳过不影响 builtin）', () => {
     const root = makeSandbox();
     try {
-      let r = bridgeSync(['init', 'demo', '--builtin'], root);
-      assert.equal(r.status, 0, `init --builtin stderr: ${r.stderr}`);
+      // v1.8-2 (ADR-0012 D1)：纯桥模式——bridge init 不再写 spec.md。
+      // 测试流程：bridge init 建台账 → AI 用 brainstorming/直接编辑填好 4 件产物 → 调 distill。
+      let r = bridgeSync(['init', 'demo', '--no-auto-probe'], root);
+      assert.equal(r.status, 0, `init stderr: ${r.stderr}`);
 
       const changeDir = join(root, 'changes', 'demo');
+      writeFileSync(join(changeDir, 'proposal.md'), '# proposal', 'utf-8');
+      writeFileSync(join(changeDir, 'tasks.md'), '# tasks', 'utf-8');
       // 写符合 bridge 格式的 design.md（### D1 — name + 决定/理由）
       writeFileSync(join(changeDir, 'design.md'),
         '# Design\n\n## Decisions\n\n### D1 — test decision\n\n**决定**：xxx\n**理由**：yyy\n\n## Purpose\n\ntest purpose\n', 'utf-8');
+      // 写 builtin 风格的 spec.md（含 ADDED Requirements 段，openspec-flavored）
+      mkdirSync(join(changeDir, 'specs', 'demo'), { recursive: true });
+      writeFileSync(join(changeDir, 'specs', 'demo', 'spec.md'),
+        '## Purpose\n\nbuiltin test capability\n\n## ADDED Requirements\n\n### Requirement: test requirement\n\nThe system SHALL test.\n\n#### Scenario: test scenario\n\n- **WHEN** test\n- **THEN** ok\n', 'utf-8');
 
       r = bridgeSync(['distill', 'changes/demo'], root);
       assert.equal(r.status, 0, `distill builtin stderr: ${r.stderr}`);

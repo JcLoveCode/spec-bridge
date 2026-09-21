@@ -290,3 +290,28 @@ CodeBuddy 自身的 `memory`（`.codebuddy/memory/`）也是同理——日常 b
 **v1.8 schema 扩展**（AGENTS.md 禁止事项 §3 同步）：`external_stack` / `adopted_at` 字段在 v1.8-1 起允许；`cross_refs` 在 v1.8-1 仍不开（留给后续 change）。
 
 **为什么是"导航员优先"**：init 默认建空台账 + 自动 probe → 用户立刻看到推荐 → 主动用外栈生成 spec，不再"先写 5 件模板 → 发现要走外栈 → 白做"。
+
+### v1.8-2 CHANGELOG（ADR-0012，pure-bridge-mode）
+
+**核心叙事**：bridge 进入"纯桥模式"——`bridge init` 不再生成任何 spec 模板（proposal/design/tasks/spec/execution-contract），只建台账 + 路由。superpowers 加入项目栈优先级，让 superpowers 栈用户被正确路由到 superpowers 的具体 skill。
+
+- **D1 砍 `--builtin` flag**（硬约束，无逃生口）：
+  - 5 件模板常量（`PROPOSAL_TEMPLATE` / `DESIGN_TEMPLATE` / `TASKS_TEMPLATE` / `SPEC_TEMPLATE` / `CONTRACT_TEMPLATE`）从 `cmd-init.mjs` 物理删除
+  - `fillTemplate` 函数一并删除
+  - `--builtin` flag 变 no-op：stderr 给 `[hint] --builtin flag removed in v1.8-2 (pure bridge mode), no-op` 后忽略
+  - `cmd-init.mjs` 净减约 138 行；`init-templates.test.mjs` 因失去测试对象删除
+- **D2 superpowers 加入 detect-stack 优先级**：项目根有 `.claude-plugin/` + `package.json` 含 `"superpowers"` 字段（双信号，与 matt 对称）→ primary = `superpowers`；优先级排序 `superpowers > matt > openspec > builtin`
+- **D3 WORKFLOW_KINDS 值域扩为 4 个**：`new Set(['superpowers', 'openspec', 'matt', 'builtin'])`；`--workflow-kind` 非法值报错文案同步
+- **D4 probe fallback 文案引导 brainstorming**：无 inventory 时 advised_reason 改为 "bridge 不写模板，请 AI 用 brainstorming 或直接编辑自由发挥"；advised_invocation fallback 文案同步
+- **D5 测试**：143/143 全绿（v1.8-2 新加 10 + 旧测试改 5；删 init-templates 4）
+
+**为什么是"纯桥"**：
+
+- bridge 是导航员，不是 spec 生成器——默认不写任何 spec 内容
+- spec 内容由用户用外栈 skill 生成（openspec-propose / matt to-spec / superpowers brainstorming）
+- builtin 兜底仅指 workflow_kind 推导的兜底，**不是**模板生成兜底
+- v1.8-1 留的 `--builtin` 逃生口本质与"导航员优先"叙事矛盾——纯桥模式彻底砍掉
+
+**v1.8-2 schema 变化**：仅 `workflow_kind` 值域扩为 4 个（**不是字段名变更**，值域扩允许）；字段本身仍叫 `workflow_kind`，旧值兼容。
+
+**回归保护**：`init-auto-probe.test.mjs B3 T1` + `init-workflow-kind.test.mjs R3 场景 3` 都改测 "`--builtin` flag no-op + stderr hint"——未来有人加回 `--builtin` 行为会立刻 fail。

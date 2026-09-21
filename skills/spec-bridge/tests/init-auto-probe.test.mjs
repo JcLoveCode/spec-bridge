@@ -129,14 +129,15 @@ test('B2 T3: probe 在 superpowers inventory 下输出 advised_invocation: use_s
   }
 });
 
-test('B2 T4: probe 在无 inventory 下输出 advised_invocation: (fallback to builtin...)', () => {
+test('B2 T4: probe 在无 inventory 下输出 advised_invocation: (bridge 不写模板 — AI 用 brainstorming 或直接编辑自由发挥)', () => {
   const root = makeSandbox();
   try {
     let r = bridge(['init', 'demo'], root);
     assert.equal(r.status, 0, `init stderr: ${r.stderr}`);
     r = bridge(['probe', 'changes/demo'], root);
     assert.equal(r.status, 0, `probe stderr: ${r.stderr}`);
-    assert.match(r.stdout, /advised_invocation: \(fallback to builtin/);
+    // v1.8-2 (ADR-0012 D4)：fallback 文案改为引导 brainstorming/自由发挥。
+    assert.match(r.stdout, /advised_invocation: bridge 不写模板 — AI 用 brainstorming 或直接编辑自由发挥/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -144,15 +145,19 @@ test('B2 T4: probe 在无 inventory 下输出 advised_invocation: (fallback to b
 
 // v1.8-1 Batch 3 测试（init 改造 C1-C4 + 逃生口）：
 // B3 红 → 绿：TDD 验证 init 默认行为变 + 双 flag 逃生口
-test('B3 T1: bridge init foo --builtin 强制生成 5 件模板（C3 逃生口）', () => {
+// v1.8-2 (ADR-0012 D1)：--builtin 砍掉——flag 变 no-op，stderr 提示，不写 5 件模板。
+test('B3 T1: bridge init foo --builtin flag 变 no-op（v1.8-2 纯桥模式）', () => {
   const root = makeSandbox();
   try {
     const r = bridge(['init', 'foo', '--builtin'], root);
     assert.equal(r.status, 0, `init --builtin stderr: ${r.stderr}`);
     const changeDir = join(root, 'changes', 'foo');
+    // v1.8-2：--builtin 不再生任何模板
     for (const f of ['proposal.md', 'design.md', 'tasks.md', 'execution-contract.md', join('specs', 'foo', 'spec.md')]) {
-      assert.ok(existsSync(join(changeDir, f)), `${f} should exist under --builtin`);
+      assert.ok(!existsSync(join(changeDir, f)), `${f} should NOT exist under pure bridge mode (--builtin no-op)`);
     }
+    // 兼容层 hint
+    assert.match(r.stderr, /--builtin flag removed in v1.8-2 \(pure bridge mode\), no-op/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

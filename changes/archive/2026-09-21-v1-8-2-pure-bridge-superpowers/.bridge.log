@@ -1,0 +1,3 @@
+2026-09-21T14:20:00Z init: scaffolded v1-8-2-pure-bridge-superpowers (layout=standalone, workflow=builtin, autoProbe=false, capabilities=pure-bridge,superpowers-detection)
+2026-09-21T14:20:00Z note: v1.8-2 纯桥模式 change（direct-archive + builtin flavor）— 自写 4 件产物手工 sync- 2026-09-21T06:30:47.964Z distill: why.md written to specs/v1-8-2-pure-bridge-superpowers/why.md (6 decisions)
+- 2026-09-21T06:31:40.427Z stage: planning → archived

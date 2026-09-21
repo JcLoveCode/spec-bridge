@@ -36,9 +36,10 @@ function parseArgs(rawArgs) {
 
 // v1.8-1 (ADR-0011 D4)：advised_skill → use_skill 命令的映射，让 AI 可机械执行（不再查 SKILL.md）。
 // 映射规则：advised_skill 子串 → use_skill 调用语法。
+// v1.8-2 (ADR-0012 D4)：(none) fallback 文案改为引导 brainstorming/自由发挥，不再暗示 builtin 模板。
 function skillToInvocation(advisedSkill) {
   if (advisedSkill === '(none)') {
-    return '(fallback to builtin: edit proposal/design/tasks/spec)';
+    return 'bridge 不写模板 — AI 用 brainstorming 或直接编辑自由发挥';
   }
   const lower = advisedSkill.toLowerCase();
   if (lower.includes('matt') || lower.includes('to-spec')) return 'use_skill to-spec';
@@ -65,7 +66,7 @@ function routeSkill(inventory) {
       return { advised_skill: skill, advised_reason: 'inventory 含 OpenSpec skill，按 D4 优先级 3 路由' };
     }
   }
-  return { advised_skill: '(none)', advised_reason: 'inventory 未含任何已知栈 skill，按 D4 优先级 4 兜底（AI 自由发挥）' };
+  return { advised_skill: '(none)', advised_reason: 'inventory 未含任何已知栈 skill — bridge 不写模板，请 AI 用 brainstorming 或直接编辑自由发挥' };
 }
 
 async function getNextHint(changeDir) {
