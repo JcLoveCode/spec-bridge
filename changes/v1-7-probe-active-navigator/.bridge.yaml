@@ -2,7 +2,7 @@
 # Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
 
 # === Lifecycle ===
-stage: contracted
+stage: executing
 layout: standalone
 branch: null
 
@@ -21,9 +21,9 @@ artifacts_hash: sha256:5c0bd62b224fbd69ba04d774ce934c5edb336c4a33bc750313647b275
 contract_hash: sha256:2903872b0d5d35fa4c037a9c6b033914c06386162dcc2cb45305bca81b5385f9
 
 # === Publication receipt (written by vendored sync) ===
-published: false
-spec_publication_receipt: null
+published: true
+spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1Njo2MzUxOGEyOWM1YjU4ODAzOWI2ZjkwYTY4ODE3ZWFlYTIxOTZiN2QzMmVhODE2MmFkZTE2NDBhZWNlMjQyM2UzIiwiYmFzZWxpbmVfYmVmb3JlX2hhc2giOiJzaGEyNTY6M2Y5MzVlODYxNjM1NjUyOGM0M2Q2MDhjY2IwNjNjYjIwZWQzN2VmZGEwYWVmZGIxNjU4MjlhY2U2YWY0OTlmZCIsImJhc2VsaW5lX2FmdGVyX2hhc2giOiJzaGEyNTY6YjFhOWRjZTJkZDE2OGU4ZmI0NTUzNDQ4MmJmNmE2NGZmNThmMmJmNjAzMmNiN2EyZThmZDE0MjIzN2ZhNDQzYyIsImNhcGFiaWxpdGllcyI6WyJ2MS03LXByb2JlLWFjdGl2ZS1uYXZpZ2F0b3IiXX0
 
 # === Resume ===
 next: edit proposal/design/tasks/spec — when stable, write execution-contract.md and advance to contracted
-last_event: stage: planning → contracted
+last_event: distill: why.md written to specs/v1-7-probe-active-navigator/why.md (8 decisions)
