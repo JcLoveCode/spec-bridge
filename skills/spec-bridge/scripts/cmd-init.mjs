@@ -5,20 +5,22 @@ import { spawnSync as spawnShim } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
 import { basename, join, resolve, sep } from 'node:path';
 import { appendEvent, readState, writeState, resolveParent } from './vendor/bridge-state.mjs';
-import { detectStack } from './vendor/detect-stack.mjs';
+import { readBridgeConfig } from './config-utils.mjs';
 import { run as runProbe } from './cmd-probe.mjs';
 import { initPersonalMemory } from './cmd-memory.mjs';
+import { detectStack } from './vendor/detect-stack.mjs';
 
 const KEBAB_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const MAX_WALENCH = 10;
 // v1.2 (ADR-0004/D1)：workflow_kind 合法值域。v1.8-2 (ADR-0012 D3) 扩为 4 个值。
 const WORKFLOW_KINDS = new Set(['superpowers', 'openspec', 'matt', 'builtin']);
 
-// v1.2 (ADR-0004/D1)：四级推导——显式 --workflow-kind > --capabilities 首值（须在值域内）> 项目栈探测 > builtin。
+// v1.2 (ADR-0004/D1)：四级推导——显式 --workflow-kind > --capabilities 首值（须在值域内）> stacks 配置 > builtin。
 // 返回 null 表示显式给了非法值（调用方报错 exit 2）。
-// v1.8-1 (ADR-0011 D2)：第 4 级 fallback 从硬编码 'builtin' 改成 `detectedPrimary`（detect-stack.mjs 输出）。
+// v1.8-1 (ADR-0011 D2)：第 4 级 fallback 从硬编码 'builtin' 改成 detectedPrimary（detect-stack.mjs 输出）。
 // v1.8-2 (ADR-0012 D2)：detectedPrimary 可能是 'superpowers'（detect-stack 新优先级）；builtin 兜底仍然存在。
-function deriveWorkflowKind(flags, detectedPrimary = 'builtin') {
+// v1.9-2 (ADR-0015)：第 4 级 fallback 改为 stacks 配置（v1.9-1 引入），移除自动探测。
+function deriveWorkflowKind(flags, configPrimary = 'builtin') {
   if (flags['workflow-kind']) {
     return WORKFLOW_KINDS.has(flags['workflow-kind']) ? flags['workflow-kind'] : null;
   }
@@ -26,7 +28,7 @@ function deriveWorkflowKind(flags, detectedPrimary = 'builtin') {
     const first = flags.capabilities.split(',')[0].trim();
     if (WORKFLOW_KINDS.has(first)) return first;
   }
-  return detectedPrimary;
+  return configPrimary;
 }
 
 // v1.8-2 (ADR-0012 D1)：5 件模板常量与 fillTemplate 函数已删除——bridge init 不再写任何 spec 模板。
@@ -157,13 +159,21 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
 
   const projectRoot = detected.root;
   const detectedLayout = detectLayout(projectRoot);
-  // v1.8-1 (ADR-0011 D2)：项目栈探测 — 用于 init 默认 workflow_kind fallback。
-  const stackDetection = detectStack(projectRoot);
+  // v1.9-2 (ADR-0015)：stacks 配置优先；无配置时仍走探测 fallback（保持 backward compat）。
+  // 计划：v1.9-3+ 完全移除探测 fallback。
+  const bridgeConfig = readBridgeConfig(projectRoot);
+  let configPrimary;
+  if (bridgeConfig.stacks.length > 0) {
+    configPrimary = bridgeConfig.stacks[0].kind;
+  } else {
+    // v1.9-2 过渡：探测作为 fallback（v1.9-3 才完全移除）
+    configPrimary = detectStack(projectRoot).primary;
+  }
   const layout = flags.layout || detectedLayout.layout;
 
-  // workflowKind 派生（flags > capabilities > 项目栈探测 > builtin）；非法显式值报错 exit 2。
-  // v1.8-2 (ADR-0012 D3)：值域扩为 4 个（superpowers/openspec/matt/builtin）；非法值报错同步。
-  const workflowKind = deriveWorkflowKind(flags, stackDetection.primary);
+  // workflowKind 派生（flags > capabilities > stacks 配置 / 探测 fallback > builtin）。
+  // v1.9-2 (ADR-0015)：第 3 级优先读 v1.9-1 stacks 配置；探测仅作 fallback。
+  const workflowKind = deriveWorkflowKind(flags, configPrimary);
   if (workflowKind === null) {
     stderr.write(`invalid --workflow-kind '${flags['workflow-kind']}' — must be one of: superpowers, openspec, matt, builtin\n`);
     return { exitCode: 2 };

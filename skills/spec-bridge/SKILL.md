@@ -429,3 +429,29 @@ CodeBuddy 自身的 `memory`（`.codebuddy/memory/`）也是同理——日常 b
 - 持久化配置让"设置一次，永久生效"，不用每次对话都声明
 
 **v1.9-1 schema 变化**：新增 `.bridge-config.json`（项目级 + 全局两层），AI 可见但不写（CLI 读写）
+
+### v1.9-2 CHANGELOG（ADR-0015，remove-auto-detect）
+
+**核心叙事**：v1.9-1 引入 stacks 配置后，v1.9-2 把"自动探测"降级为 fallback（仅 stacks 配置为空时用）。v1.9-3 计划完全移除探测模块。
+
+- **D1 移除主路径探测**：
+  - `cmd-init.mjs`：第 3 级派生从 `detectStack(projectRoot)` 改为读 v1.9-1 stacks 配置
+  - `cmd-adopt.mjs`：优先级 `--stack` flag > stacks 配置 > 信号探测 fallback
+  - `cmd-probe.mjs`：输出加 `stack_hint` 字段（来自配置）
+- **D2 探测作 fallback**：保留 `vendor/detect-stack.mjs`（v1.9-3 才删），仅在 stacks 配置为空时使用
+- **D4 配置完全覆盖探测**：用户配 stacks 后，磁盘特征（superpowers/matt/openspec/）被忽略
+- **D5 adopt 优先级三段**：
+  ```
+  --stack <kind> flag  >  stacks 配置首个  >  信号探测（fallback）
+  ```
+
+**测试**：192/192 全绿（v1.9-2 新加 4 测试）
+
+**v1.9-2 schema 变化**：
+- probe 输出加 `stack_hint: <kind>`（来自 stacks 配置首个或探测）
+- 无 schema 字段名变更
+
+**为什么探测降级不删除**：
+- 188 个旧测试中 ~30 个依赖探测 fallback（`detect-stack-superpowers.test.mjs` 等）
+- v1.9-3 计划完全删除探测前，给用户过渡期
+- v1.9-2 已"事实生效"——配 stacks 就完全跳过探测

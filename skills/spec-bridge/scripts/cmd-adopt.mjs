@@ -7,6 +7,7 @@ import { basename, join } from 'node:path';
 import { appendEvent, readState, resolveParent, writeState } from './vendor/bridge-state.mjs';
 import { detectProjectRoot } from './cmd-init.mjs';
 import { initPersonalMemory } from './cmd-memory.mjs';
+import { readBridgeConfig } from './config-utils.mjs';
 
 const WORKFLOW_KINDS = new Set(['openspec', 'matt', 'builtin']);
 // v1.8-1 (ADR-0011 D3)：外栈值域，'auto' 是探测哨兵。
@@ -117,13 +118,25 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
     return { exitCode: 2 };
   }
 
-  // v1.8-1 (ADR-0011 D3)：--stack <kind|auto> 标志显式指定外栈；'auto' 走探测（D3 信号启发式）。
+  // v1.8-1 (ADR-0011 D3)：--stack <kind> 标志显式指定外栈；'auto' 走探测（D3 信号启发式）。
+  // v1.9-2 (ADR-0015)：--stack <kind> + 探测（无配置时）；保留信号启发式作为 fallback。
   const stackFlag = flags.stack;
   if (stackFlag && !EXTERNAL_STACKS.has(stackFlag)) {
     stderr.write(`invalid --stack '${stackFlag}' — must be one of: matt, openspec, superpowers, builtin, auto\n`);
     return { exitCode: 2 };
   }
-  const externalStack = (stackFlag && stackFlag !== 'auto') ? stackFlag : detectStackFromSignals(signals);
+  // v1.9-2：stacks 配置优先；无配置时仍走信号探测（保持 backward compat）。
+  const projectRootForConfig = findProjectRoot(changeDir);
+  const bridgeConfig = projectRootForConfig ? readBridgeConfig(projectRootForConfig) : null;
+  let externalStack;
+  if (stackFlag && stackFlag !== 'auto') {
+    externalStack = stackFlag;
+  } else if (bridgeConfig?.stacks.length > 0) {
+    externalStack = bridgeConfig.stacks[0].kind;
+  } else {
+    // fallback：信号探测（v1.9-3 才完全移除）
+    externalStack = detectStackFromSignals(signals);
+  }
   const adoptedAt = new Date().toISOString();
 
   // 探测项目根 → layout（缺省显式 flag 走探测，否则走 flag；非 git 或探测失败 → standalone 兜底）
