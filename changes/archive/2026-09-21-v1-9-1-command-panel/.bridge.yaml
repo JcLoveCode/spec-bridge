@@ -2,7 +2,7 @@
 # Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
 
 # === Lifecycle ===
-stage: planning
+stage: executing
 layout: standalone
 branch: null
 
@@ -25,9 +25,9 @@ external_stack: null
 adopted_at: null
 
 # === Publication receipt (written by vendored sync) ===
-published: false
-spec_publication_receipt: null
+published: true
+spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1NjowNzAwOWRmMDQzZmVmMTA4MjUxYTFkY2EwZWMwMWMzYWNjZDYyYjUwMjc3MWY2ZjJmYjM0NTE0NTczM2M1NTVkIiwiYmFzZWxpbmVfYmVmb3JlX2hhc2giOiJzaGEyNTY6NDI4ZjcxNzkwZTUxZDBhYmI0MDg1OTFmM2U0OTdiYzk3YzhiYmQ3NDgyYWZkYjFhYWVkZjNjYTFmYjYxZDBhYSIsImJhc2VsaW5lX2FmdGVyX2hhc2giOiJzaGEyNTY6MWQzMGViNGI0OTdjNDc0NjM2MzdkZGVlMDRlYTc2NGVmYzBhNTc1M2UwOGMxZDc1Y2VjZGQxM2Y3MzMwYTAwYSIsImNhcGFiaWxpdGllcyI6WyJ2MS05LTEtY29tbWFuZC1wYW5lbCJdfQ
 
 # === Resume ===
 next: use external stack skill (openspec-propose / matt to-spec / superpowers brainstorming) — when done, bridge archive entry
-last_event: init: scaffolded v1-9-1-command-panel (layout=standalone, workflow=superpowers, autoProbe=true, capabilities=unset)
+last_event: stage: planning → executing
