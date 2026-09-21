@@ -10,6 +10,7 @@ import {
   resolvePublicationContext,
 } from './spec-publication.mjs';
 import { readState, writeState } from './bridge-state.mjs';
+import { appendEvent } from './bridge-state.mjs';
 
 function toPosix(value) {
   return value.replace(/\\/g, '/');
@@ -27,6 +28,33 @@ export function deriveCapabilityDir(changeSpecsDir, specFile) {
 
 function isMissingPurposeIssue(issue, purposeErrorMessage) {
   return issue.level === 'ERROR' && issue.path === 'overview' && issue.message === purposeErrorMessage;
+}
+
+// v1.8-1 (ψ3-1 B)：扫描 specs/ 子目录下的 spec.md frontmatter，检测外栈协议信号。
+// 检测 `synthesized_by: <stack>` 或 `external: true`；返回首个匹配的栈名（matt/openspec/<other>）。
+function detectExternalSpecFormat(specsDir) {
+  if (!existsSync(specsDir)) return false;
+  for (const cap of readdirSync(specsDir)) {
+    const specFile = join(specsDir, cap, 'spec.md');
+    if (!existsSync(specFile)) continue;
+    const content = readFileSync(specFile, 'utf-8');
+    if (/^synthesized_by:\s*(matt|openspec)/m.test(content)) return true;
+    if (/^external:\s*true/m.test(content)) return true;
+  }
+  return false;
+}
+
+function detectImplicitStack(specsDir) {
+  if (!existsSync(specsDir)) return 'unknown';
+  for (const cap of readdirSync(specsDir)) {
+    const specFile = join(specsDir, cap, 'spec.md');
+    if (!existsSync(specFile)) continue;
+    const content = readFileSync(specFile, 'utf-8');
+    const m = content.match(/^synthesized_by:\s*([^\n]+)/m);
+    if (m) return m[1].trim();
+    if (/^external:\s*true/m.test(content)) return 'external';
+  }
+  return 'unknown';
 }
 
 function openingFence(line) {
@@ -84,16 +112,61 @@ export async function run(args, {
     return { exitCode: 2 };
   }
 
-  const requestedChangeDir = args[0];
+  // v1.8-1 (ADR-0011 C10 配套 + ψ3-1 B 选项)：--external-skip 标志
+  // external_stack change 的 spec.md 是外栈格式（无 openspec ADDED/MODIFIED 段），
+  // 跳过 openspec 校验 + 不写根 baseline + 写真实 receipt（带 capabilities/source_hash，verify 可通过）+ exit 0。
+  const externalSkip = args.includes('--external-skip');
+  const filteredArgs = args.filter((a) => a !== '--external-skip');
+
+  const requestedChangeDir = filteredArgs[0];
   if (!existsSync(requestedChangeDir)) {
     stderr.write(`Error: "${requestedChangeDir}" not found\n`);
     return { exitCode: 2 };
   }
 
+  // v1.8-1 (ψ3-1 B)：--external-skip 触发条件：
+  //   (a) state.external_stack 显式标了外栈（adopt 来的），或
+  //   (b) spec.md frontmatter 含 `synthesized_by:` / `external:` 隐式外栈信号
+  // 满足任一即跳过 openspec ADDED/MODIFIED 校验 + 不写根 baseline + 写真实 receipt（含 capabilities + source_hash）→ verify 仍能通过。
+  // builtin change 配 --external-skip 但无上述信号 → 仍走 openspec 校验（与 D4 对齐）。
+
   const context = resolvePublicationContext(requestedChangeDir);
   const { changeDir, projectRoot, baselineSpecsDir } = context;
   const { Validator, VALIDATION_MESSAGES } = await import('./dist/index.js');
   const validator = new Validator();
+
+  // v1.8-1 (ψ3-1 B)：--external-skip 检测 external_stack change（显式 state.external_stack 或隐式 spec frontmatter），
+  // 跳过 openspec ADDED/MODIFIED 校验 + 不写根 baseline + 写真实 receipt → verify 可通过。
+  // builtin change 配 --external-skip 但无上述信号 → 仍走 openspec 校验（与 D4 对齐）。
+  const externalSkipRequested = process.argv.includes('--external-skip');
+  if (externalSkipRequested && existsSync(join(changeDir, '.bridge.yaml'))) {
+    const earlyState = readState(changeDir);
+    const explicitExternal = !!earlyState.external_stack;
+    const implicitExternal = detectExternalSpecFormat(join(changeDir, 'specs'));
+    const externalKind = earlyState.external_stack || (implicitExternal ? detectImplicitStack(join(changeDir, 'specs')) : null);
+    if (explicitExternal || implicitExternal) {
+      const skipLayout = validateSpecPathLayout(changeDir, { requireSpecs: true });
+      if (!skipLayout.pass) {
+        for (const failure of skipLayout.failures) stderr.write(`${failure}\n`);
+        return { exitCode: 1 };
+      }
+      const skipCapabilities = skipLayout.specFiles.map((f) => deriveCapabilityDir(join(changeDir, 'specs'), f)).sort();
+      const baselineBeforeHash = hashPublishedBaseline(projectRoot, skipCapabilities);
+      const realReceipt = createPublicationReceipt(changeDir, projectRoot, skipLayout.specFiles, baselineBeforeHash);
+      realReceipt.external_skip = true;
+      realReceipt.external_stack = externalKind;
+      earlyState.published = true;
+      earlyState.spec_publication_receipt = encodePublicationReceipt(realReceipt);
+      if (implicitExternal && !explicitExternal) earlyState.external_stack = externalKind;
+      writeState(changeDir, earlyState);
+      appendEvent(changeDir,
+        `sync: --external-skip → real receipt for ${externalKind} (no baseline write; verify will pass)`);
+      stdout.write(`  ⏭  External skip: ${externalKind} spec format, real receipt written (verify-compatible)\n`);
+      stdout.write(`  🧾 spec_publication_receipt: ${earlyState.spec_publication_receipt}\n`);
+      stdout.write(`\n✅ External-skip sync complete (${externalKind}); root baseline NOT written.\n`);
+      return { exitCode: 0 };
+    }
+  }
 
   // Collect deltas from this project only. The active change path, not cwd,
   // establishes both the publication destination and conflict scope.

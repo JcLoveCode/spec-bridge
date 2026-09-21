@@ -247,7 +247,9 @@ async function main() {
       console.error(`WRITE-PROTECTED: ${changeDir} is under changes/archive/ — archived changes are immutable (ADR-0005). Open a follow-up: init <name> --parent <change-id>`);
       process.exit(4);
     }
-    const result = await runSync([changeDir]);
+    // v1.8-1 (ψ3-1 B)：透传 --external-skip 等 flag 给 cmd-sync。
+    const syncArgs = [changeDir, ...rest.slice(1)];
+    const result = await runSync(syncArgs);
     process.exit(result.exitCode ?? 0);
   }
 

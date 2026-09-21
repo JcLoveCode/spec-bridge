@@ -48,6 +48,13 @@ export async function run(args, io = {}) {
     return { exitCode: 1 };
   }
 
+  // v1.8-1 (ADR-0011 D4)：external_stack change 的 why.md 由外栈自带生成器写，
+  // bridge 不强制要求 why.md（与 distill-skip-external 行为对齐）。
+  if (state.external_stack) {
+    stdout.write(`PASS: archive-ready (external_stack=${state.external_stack}, why.md provided by external stack)\n`);
+    return { exitCode: 0 };
+  }
+
   // 4. 所有 capability 都有 why.md
   const caps = listCapabilities(changeDir);
   if (caps.length === 0) {
