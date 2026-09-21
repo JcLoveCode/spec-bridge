@@ -455,3 +455,31 @@ CodeBuddy 自身的 `memory`（`.codebuddy/memory/`）也是同理——日常 b
 - 188 个旧测试中 ~30 个依赖探测 fallback（`detect-stack-superpowers.test.mjs` 等）
 - v1.9-3 计划完全删除探测前，给用户过渡期
 - v1.9-2 已"事实生效"——配 stacks 就完全跳过探测
+
+### v1.9-3 CHANGELOG（ADR-0016，context-aware-navigator）
+
+**核心叙事**：CLI 自动记录 `lastUsedStack`，推荐从"配置优先"升级为"上次使用优先"，让用户连续开发时不用每次手动设置栈。
+
+- **D1 自动记录**：init/adopt 成功后自动写入 `lastUsedStack`
+- **D2 推荐优先级**：`lastUsedStack > stacks[0] > builtin`（v1.9-3 新函数 `getRecommendedStack`）
+- **D3 probe 输出**加 `last_used: <kind>` 字段
+- **D4 reset-used 子命令**：`bridge stacks reset-used` 清空 lastUsedStack
+- **D5 存储位置**：项目级 `.bridge-config.json`（不写全局）
+- **D6 不主动清空**：用户的"上次"是稳定信号，不超时
+
+**测试**：197/197 全绿（v1.9-3 新加 5 测试）
+
+**v1.9-3 schema 变化**：
+- probe 输出加 `last_used: <kind>`（来自 lastUsedStack）
+- config 加 `lastUsedStack` 字段（v1.9-1 预留，v1.9-3 实装）
+- stack_hint 升级为来自 `getRecommendedStack(config)`（不再直接读 stacks[0]）
+
+**为什么是 context-aware**：
+- 用户原话："只需要根据对话场景和上下文还有上一次用的能力，指引用户用哪个能力"
+- 用户的"上次用的"是稳定信号——比"配的优先级"更实际
+- CLI 自动写比 AI 写更可靠（避免 AI 漏写 / 写错）
+
+**v1.9-3 与 ADR 链**：
+- ADR-0014 命令面板：lastUsedStack 是 stacks 配置的"动态维度"层
+- ADR-0015 移除探测：context-aware 进一步减少对探测的依赖
+- ADR-0007 无会话状态：lastUsedStack 写磁盘，不依赖对话记忆

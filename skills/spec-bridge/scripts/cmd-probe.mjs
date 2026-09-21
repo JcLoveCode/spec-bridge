@@ -19,7 +19,7 @@ import { readState } from './vendor/bridge-state.mjs';
 import { detectLayout } from './bridge.mjs';
 import { run as runNext } from './cmd-next.mjs';
 import { detectIdeMemory } from './cmd-memory.mjs';
-import { readBridgeConfig } from './config-utils.mjs';
+import { readBridgeConfig, getRecommendedStack } from './config-utils.mjs';
 
 function parseArgs(rawArgs) {
   const positional = [];
@@ -160,8 +160,10 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   const routed = routeSkill(inventory);
   const next_hint = await getNextHint(changeDir);
   // v1.9-2 (ADR-0015)：stack_hint 改读 v1.9-1 stacks 配置（替代自动探测）。
+  // v1.9-3 (ADR-0016)：stack_hint 升级为 lastUsedStack > stacks[0] > builtin。
   const probeConfig = readBridgeConfig(cwd);
-  const stackHint = probeConfig.stacks[0]?.kind || 'builtin';
+  const stackHint = getRecommendedStack(probeConfig);
+  const lastUsed = probeConfig.lastUsedStack || '(unset)';
   stdout.write(`project_type: ${project_type}\n`);
   stdout.write(`capabilities: ${capabilities}\n`);
   stdout.write(`stage: ${stage}\n`);
@@ -171,6 +173,7 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   stdout.write(`advised_invocation: ${skillToInvocation(routed.advised_skill)}\n`);
   stdout.write(`next_hint: ${next_hint}\n`);
   stdout.write(`stack_hint: ${stackHint}\n`);
+  stdout.write(`last_used: ${lastUsed}\n`);
   // v1.8-3 (ADR-0013 D4)：memory_hint 三态输出——让 AI 一眼看到"上次讲过啥"
   stdout.write(`memory_hint: ${buildMemoryHint(changeDir, cwd)}\n`);
   return { exitCode: 0 };

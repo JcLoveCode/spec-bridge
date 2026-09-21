@@ -9,7 +9,7 @@
 //
 // 配置写入 <repo>/.bridge-config.json（项目级）
 
-import { readBridgeConfig, setStacks, addStack, removeStack, VALID_STACKS } from './config-utils.mjs';
+import { readBridgeConfig, setStacks, addStack, removeStack, resetLastUsedStack, VALID_STACKS } from './config-utils.mjs';
 
 export function run(args) {
   const projectRoot = args.projectRoot;
@@ -60,8 +60,15 @@ export function run(args) {
       break;
     }
 
+    // v1.9-3 (ADR-0016)：重置 lastUsedStack（context-aware 重置）
+    case 'reset-used': {
+      resetLastUsedStack(projectRoot);
+      console.log('Last-used stack reset.');
+      break;
+    }
+
     default:
-      throw new Error(`Unknown subcommand: ${subCommand}. Usage: bridge stacks [list|set|add|remove]`);
+      throw new Error(`Unknown subcommand: ${subCommand}. Usage: bridge stacks [list|set|add|remove|reset-used]`);
   }
 }
 
@@ -73,7 +80,8 @@ export const usage = `bridge stacks [list|set|add|remove] [...]
     set <kind1,kind2..>  overwrite with priority = order (matt,superpowers → matt=1, superpowers=2)
     add <kind>           append one stack (priority = max+1)
     remove <kind>        delete one stack (priorities renumbered)
-  
+    reset-used           clear lastUsedStack (v1.9-3 context-aware reset)
+
   Valid kinds: openspec, matt, superpowers, builtin
   
   Config written to: <repo>/.bridge-config.json (project-level override)`;

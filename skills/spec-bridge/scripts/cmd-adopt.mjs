@@ -7,7 +7,7 @@ import { basename, join } from 'node:path';
 import { appendEvent, readState, resolveParent, writeState } from './vendor/bridge-state.mjs';
 import { detectProjectRoot } from './cmd-init.mjs';
 import { initPersonalMemory } from './cmd-memory.mjs';
-import { readBridgeConfig } from './config-utils.mjs';
+import { readBridgeConfig, writeBridgeConfig } from './config-utils.mjs';
 
 const WORKFLOW_KINDS = new Set(['openspec', 'matt', 'builtin']);
 // v1.8-1 (ADR-0011 D3)：外栈值域，'auto' 是探测哨兵。
@@ -136,6 +136,10 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
   } else {
     // fallback：信号探测（v1.9-3 才完全移除）
     externalStack = detectStackFromSignals(signals);
+  }
+  // v1.9-3 (ADR-0016)：自动记录 lastUsedStack（context-aware）。
+  if (projectRootForConfig) {
+    writeBridgeConfig(projectRootForConfig, { lastUsedStack: externalStack });
   }
   const adoptedAt = new Date().toISOString();
 

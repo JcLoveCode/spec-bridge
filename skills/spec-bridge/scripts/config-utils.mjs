@@ -166,3 +166,27 @@ export function removeStack(projectRoot, kind) {
   stacks.forEach((s, i) => (s.priority = i + 1));
   writeBridgeConfig(projectRoot, { stacks });
 }
+
+/**
+ * 推荐栈（v1.9-3 / ADR-0016）：上下文感知
+ * 优先级：lastUsedStack > stacks[0] > builtin
+ * @param {{mode: string, stacks: Array, lastUsedStack?: string}} config
+ * @returns {string}
+ */
+export function getRecommendedStack(config) {
+  if (config.lastUsedStack && VALID_STACKS.includes(config.lastUsedStack)) {
+    return config.lastUsedStack;
+  }
+  if (config.stacks.length > 0) {
+    return config.stacks[0].kind;
+  }
+  return 'builtin';
+}
+
+/**
+ * 重置 lastUsedStack（context-aware 重置）
+ * @param {string} projectRoot
+ */
+export function resetLastUsedStack(projectRoot) {
+  writeBridgeConfig(projectRoot, { lastUsedStack: null });
+}

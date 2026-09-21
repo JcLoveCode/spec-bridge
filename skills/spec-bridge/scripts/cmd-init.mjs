@@ -5,7 +5,7 @@ import { spawnSync as spawnShim } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
 import { basename, join, resolve, sep } from 'node:path';
 import { appendEvent, readState, writeState, resolveParent } from './vendor/bridge-state.mjs';
-import { readBridgeConfig } from './config-utils.mjs';
+import { readBridgeConfig, writeBridgeConfig } from './config-utils.mjs';
 import { run as runProbe } from './cmd-probe.mjs';
 import { initPersonalMemory } from './cmd-memory.mjs';
 import { detectStack } from './vendor/detect-stack.mjs';
@@ -178,6 +178,8 @@ export async function run(args, { stdout = process.stdout, stderr = process.stde
     stderr.write(`invalid --workflow-kind '${flags['workflow-kind']}' — must be one of: superpowers, openspec, matt, builtin\n`);
     return { exitCode: 2 };
   }
+  // v1.9-3 (ADR-0016)：自动记录 lastUsedStack（context-aware）。
+  writeBridgeConfig(projectRoot, { lastUsedStack: workflowKind });
   const changesDir = layout === 'openspec'
     ? join(projectRoot, 'openspec', 'changes')
     : join(projectRoot, 'changes');
