@@ -1,0 +1,33 @@
+# .bridge.yaml — spec-bridge change state
+# Derived data. Always rebuildable from artifacts. Lost/corrupt → fall back to content-level detection.
+
+# === Lifecycle ===
+stage: archived
+layout: openspec
+branch: null
+
+# === Workflow (v1.2) ===
+workflow_kind: builtin
+parent: null
+parent_artifacts_hash: null
+
+# === Capabilities (probed once per change) ===
+capabilities: null
+tags: null
+
+# === Contract gate ===
+contract_approved: null
+artifacts_hash: null
+contract_hash: null
+
+# === External stack (v1.8-1 ADR-0011 D3) ===
+external_stack: matt
+adopted_at: 2026-09-21T08:29:42.668Z
+
+# === Publication receipt (written by vendored sync) ===
+published: true
+spec_publication_receipt: eyJ2ZXJzaW9uIjoxLCJzb3VyY2VfaGFzaCI6InNoYTI1NjpiNWJkYmJiYmRjNDc5NWZlODBhNjA0MDA1OGZmY2FkODkyMTM5MTVmYTQ5NWQwODY5ZWY5MjgyZjRjOWFiNzc0IiwiYmFzZWxpbmVfYmVmb3JlX2hhc2giOiJzaGEyNTY6MGI0M2FmNWY1MWIwMmE0YjE4M2VjYzRmYTRhOGY5MDAzZDRiZjUyMjcxZThlNjMxZmE4NjQzYTUwMDgyNzE5ZCIsImJhc2VsaW5lX2FmdGVyX2hhc2giOiJzaGEyNTY6MGI0M2FmNWY1MWIwMmE0YjE4M2VjYzRmYTRhOGY5MDAzZDRiZjUyMjcxZThlNjMxZmE4NjQzYTUwMDgyNzE5ZCIsImNhcGFiaWxpdGllcyI6WyJ2MS04LTMtbWVtb3J5LXBlcnNvbmFsLXRlYW0iXX0
+
+# === Resume ===
+next: use_skill to-spec — synthesize the conversation into a matt spec (adopted from matt at 2026-09-21T08:29:42.668Z)
+last_event: stage: archived → archived

@@ -1,0 +1,7 @@
+- 2026-09-21T08:29:42.704Z adopt: adopted v1-8-3-memory-personal-team from external artifacts (workflow=builtin, stack=matt, layout=openspec, signals=[proposal.md,design.md,tasks.md,execution-contract.md,specs/v1-8-3-memory-personal-team/spec.md])
+- 2026-09-21T08:29:51.496Z stage: planning → executing
+- 2026-09-21T08:29:51.937Z stage: executing → contracted
+- 2026-09-21T08:30:10.066Z distill: skipped (external_stack=matt)
+- 2026-09-21T08:30:24.239Z stage: contracted → archived
+- 2026-09-21T08:30:24.249Z memory sync FAILED: The "path" argument must be of type string. Received undefined
+- 2026-09-21T08:30:33.426Z stage: archived → archived
