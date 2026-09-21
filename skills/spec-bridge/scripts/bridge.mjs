@@ -20,6 +20,7 @@ import { run as runSync } from './vendor/cmd-sync.mjs';
 import { run as runInit } from './cmd-init.mjs';
 import { run as runAdopt } from './cmd-adopt.mjs';
 import { run as runNext } from './cmd-next.mjs';
+import { run as runProbe } from './cmd-probe.mjs';
 import { run as runPattern } from './cmd-pattern.mjs';
 import { run as runMention, runRootcause } from './cmd-mention.mjs';
 import { run as runRebuttal } from './cmd-rebuttal.mjs';
@@ -100,7 +101,7 @@ function currentHashes(changeDir) {
   };
 }
 
-function detectLayout(projectRoot) {
+export function detectLayout(projectRoot) {
   const root = resolve(projectRoot);
   // 修正（v1.3 Batch N 补丁）：原探测只看 `openspec/` 目录存在——会把 OpenSpec CLI 本地安装
   // （磁盘有、gitignored）误判为 openspec 布局，让 list 走 `openspec/changes/` 看不见 `changes/archive/` 历史。
@@ -199,6 +200,12 @@ async function main() {
 
   if (command === 'next') {
     const result = await runNext(rest);
+    process.exit(result.exitCode ?? 0);
+  }
+
+  // v1.7 (ADR-0010/D4)：导航员激活 — 4 维度探测 + 4 级路由 + 合并 next hint + D5 stdout
+  if (command === 'probe') {
+    const result = await runProbe(rest);
     process.exit(result.exitCode ?? 0);
   }
 

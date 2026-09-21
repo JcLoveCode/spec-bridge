@@ -4,7 +4,7 @@
 
 ## Batch 1 — probe 探测逻辑（4 维度 + 路由）
 
-- [ ] **T1.1** 新建 `skills/spec-bridge/scripts/cmd-probe.mjs`，实现 `run(projectRoot, opts)` 函数：
+- [x] **T1.1** 新建 `skills/spec-bridge/scripts/cmd-probe.mjs`，实现 `run(projectRoot, opts)` 函数：
   - detectLayout → project_type
   - 读 `.bridge.yaml` → capabilities, stage, next
   - parse `--inventory "<skill1>,<skill2>"` → 已用 skill 数组
@@ -26,7 +26,7 @@
 
 ## Batch 3 — 测试
 
-- [ ] **T3.1** 新建 `skills/spec-bridge/tests/probe-active-navigator.test.mjs`，覆盖：
+- [x] **T3.1** 新建 `skills/spec-bridge/tests/probe-active-navigator.test.mjs`，覆盖：
   - R1: Superpowers 项目 + inventory 含 superpowers-tdd → advised_skill = superpowers-tdd
   - R2: Matt 项目 + 无 inventory → advised_skill = matt-to-goal
   - R3: OpenSpec 项目 + inventory 含 openspec-explorer → advised_skill = openspec-apply-change
