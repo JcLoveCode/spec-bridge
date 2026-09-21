@@ -88,3 +88,53 @@ test('R3：change-dir 缺失时 exit 2', () => {
     assert.match(result.stderr, /Usage: bridge probe/);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
+
+// === v1.7 hotfix：C9 隐式 change-dir fallback ===
+
+test('R4 场景 1：仓库根 + 单个 change → 自动 fallback 成功', () => {
+  const root = makeSandbox();
+  try {
+    bridge(['init', 'demo'], root);
+    const result = bridge(['probe', '.'], root);
+    assert.equal(result.status, 0, `stderr: ${result.stderr}`);
+    assert.match(result.stdout, /^advised_skill: \(none\)$/m);
+    assert.match(result.stderr, /\[hint\] no \.bridge\.yaml under .* resolved implicit change-dir/m);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('R4 场景 2：仓库根 + 多个 change → ambiguous 错误 exit 2', () => {
+  const root = makeSandbox();
+  try {
+    bridge(['init', 'alpha'], root);
+    bridge(['init', 'beta'], root);
+    const result = bridge(['probe', '.'], root);
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /ambiguous: found 2 change dirs/);
+    assert.match(result.stderr, /specify one explicitly/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('R4 场景 3：仓库根 + 无 change → 原错误保留 exit 1', () => {
+  const root = makeSandbox();
+  try {
+    const result = bridge(['probe', '.'], root);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /no \.bridge\.yaml under/);
+    assert.doesNotMatch(result.stderr, /ambiguous/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('R4 场景 4：用户显式给非 cwd 路径且无 .bridge.yaml → 不 fallback exit 1', () => {
+  const root = makeSandbox();
+  const otherRoot = makeSandbox();
+  try {
+    bridge(['init', 'demo'], root);
+    const result = bridge(['probe', otherRoot], root);
+    assert.equal(result.status, 1, `stderr: ${result.stderr}`);
+    assert.match(result.stderr, /no \.bridge\.yaml under/);
+    assert.doesNotMatch(result.stderr, /resolved implicit change-dir/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(otherRoot, { recursive: true, force: true });
+  }
+});

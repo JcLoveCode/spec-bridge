@@ -4,14 +4,15 @@
 
 ## Batch 1 — probe 探测逻辑（4 维度 + 路由）
 
-- [x] **T1.1** 新建 `skills/spec-bridge/scripts/cmd-probe.mjs`，实现 `run(projectRoot, opts)` 函数：
+- [x] **T1.1** 新建 `skills/spec-bridge/scripts/cmd-probe.mjs`，实现 `run(projectRoot, opts)` 函数（含 v1.7 hotfix C9 隐式 change-dir fallback）：
   - detectLayout → project_type
   - 读 `.bridge.yaml` → capabilities, stage, next
   - parse `--inventory "<skill1>,<skill2>"` → 已用 skill 数组
   - routeSkill(project_type, capabilities, inventory, stage) → advised_skill + reason
   - 内调 `bridge next` 合并拍点
   - stdout 输出 D5 格式
-- [ ] **T1.2** bridge.mjs dispatch 加 probe 分支 + usage 块更新（约 5 行）
+- [x] **T1.2** bridge.mjs dispatch 加 probe 分支 + usage 块更新（约 5 行）
+- [x] **T1.3** cmd-probe.mjs 加 C9 隐式 change-dir fallback（`bridge probe .` 自动找 cwd 下唯一含 .bridge.yaml 的 change dir；R4 4 场景测试覆盖：单 / 多 / 无 / 显式错路径）
 
 完成定义：`node bridge.mjs probe .` 输出 D5 格式文本；4 种路由优先级各覆盖（手动跑 4 次不同 inventory 验证）
 审查时点：批末

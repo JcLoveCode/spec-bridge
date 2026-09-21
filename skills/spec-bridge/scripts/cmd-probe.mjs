@@ -9,8 +9,11 @@
 //   C5: 合并 bridge next 的 next_hint（不重复造车）
 //   C6: 4 级路由优先级固定写死（Superpowers > Matt > OpenSpec > 兜底）
 //   C8: 输出格式 D5（KEY:value 文本，人类可读）
+//   C9: 隐式 change-dir fallback（v1.7 hotfix）：当用户传 `bridge probe .` 或
+//       其他等于 cwd 的路径时，自动在 cwd/changes/ 下找唯一含 .bridge.yaml
+//       的 change 目录；用户显式给非 cwd 路径不兜底（避免掩盖错）
 
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { readState } from './vendor/bridge-state.mjs';
 import { detectLayout } from './bridge.mjs';
@@ -61,19 +64,47 @@ async function getNextHint(changeDir) {
   return adviceLine ? adviceLine.replace(/^→ /, '').trim() : '(unknown)';
 }
 
+function resolveImplicitChangeDir(cwd) {
+  // 1. cwd 自身是 change dir
+  if (existsSync(join(cwd, '.bridge.yaml'))) return { found: cwd };
+  // 2. cwd/changes/<name>/ 下找
+  const changesDir = join(cwd, 'changes');
+  if (!existsSync(changesDir)) return { found: null };
+  const subs = readdirSync(changesDir, { withFileTypes: true });
+  const matches = subs
+    .filter((d) => d.isDirectory() && existsSync(join(changesDir, d.name, '.bridge.yaml')))
+    .map((d) => join(changesDir, d.name));
+  if (matches.length === 1) return { found: matches[0] };
+  if (matches.length > 1) return { found: null, ambiguous: matches };
+  return { found: null };
+}
+
 export async function run(args, { stdout = process.stdout, stderr = process.stderr, cwd = process.cwd() } = {}) {
   const { positional, flags } = parseArgs(args);
   if (!positional[0]) {
     stderr.write('Usage: bridge probe <change-dir> [--inventory <s1,s2,...>]\n');
     return { exitCode: 2 };
   }
-  const changeDir = resolve(cwd, positional[0]);
+  const rawDir = resolve(cwd, positional[0]);
   const inventory = flags.inventory ? flags.inventory.split(',').map((s) => s.trim()).filter(Boolean) : [];
   const detected = detectLayout(cwd);
   const project_type = detected.layout;
+  // 隐式 fallback：仅当 rawDir === cwd 时启用（用户显式给其他路径不兜底）
+  let changeDir = rawDir;
   if (!existsSync(join(changeDir, '.bridge.yaml'))) {
-    stderr.write(`no .bridge.yaml under ${changeDir} — is it a bridge change directory?\n`);
-    return { exitCode: 1 };
+    const implicit = resolve(cwd) === rawDir ? resolveImplicitChangeDir(cwd) : { found: null };
+    if (implicit.found) {
+      changeDir = implicit.found;
+      stderr.write(`[hint] no .bridge.yaml under ${rawDir}; resolved implicit change-dir → ${changeDir}\n`);
+    } else if (implicit.ambiguous) {
+      stderr.write(`ambiguous: found ${implicit.ambiguous.length} change dirs with .bridge.yaml:\n`);
+      for (const m of implicit.ambiguous) stderr.write(`  - ${m}\n`);
+      stderr.write('specify one explicitly: bridge probe <change-dir>\n');
+      return { exitCode: 2 };
+    } else {
+      stderr.write(`no .bridge.yaml under ${rawDir} — is it a bridge change directory?\n`);
+      return { exitCode: 1 };
+    }
   }
   const state = readState(changeDir);
   const stage = state.stage || 'planning';
